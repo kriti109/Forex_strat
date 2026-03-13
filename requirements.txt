@@ -1,0 +1,17 @@
+numpy
+pandas
+matplotlib
+seaborn
+scikit-learn
+xgboost
+lightgbm
+statsmodels
+scipy
+jupyter
+notebook
+ipykernel
+tqdm
+yfinance
+pandas-datareader
+plotly
+torch

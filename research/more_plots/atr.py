@@ -19,19 +19,21 @@ def compute_indicators(df):
     for w in [20, 40, 75]:
         df[f'ema_{w}'] = c.ewm(span=w, adjust=False).mean()
 
-    # RSI(5)
+    # RSI(5) and RSI(20)
     delta = c.diff()
-    gain  = delta.clip(lower=0).rolling(5).mean()
-    loss  = (-delta.clip(upper=0)).rolling(5).mean()
-    df['rsi5'] = 100 - (100 / (1 + gain / (loss + 1e-9)))
+    for period in [5, 20]:
+        gain = delta.clip(lower=0).rolling(period).mean()
+        loss = (-delta.clip(upper=0)).rolling(period).mean()
+        df[f'rsi{period}'] = 100 - (100 / (1 + gain / (loss + 1e-9)))
 
-    # ATR(5)
+    # ATR(5) and ATR(20)
     tr = pd.concat([
         h - l,
         (h - c.shift()).abs(),
         (l - c.shift()).abs()
     ], axis=1).max(axis=1)
-    df['atr5'] = tr.rolling(5).mean()
+    for period in [5, 20]:
+        df[f'atr{period}'] = tr.rolling(period).mean()
 
     return df
 
@@ -45,8 +47,8 @@ def plot_year(year_df, year, plot_num, output_folder):
 
     # ── 3-panel layout ──────────────────────────────────────────────────────
     # Row 1 : OHLC + MAs
-    # Row 2 : RSI(5)
-    # Row 3 : ATR(5)
+    # Row 2 : RSI(5) + RSI(20)
+    # Row 3 : ATR(5) + ATR(20)
 
     fig = make_subplots(
         rows=3, cols=1,
@@ -54,8 +56,8 @@ def plot_year(year_df, year, plot_num, output_folder):
         vertical_spacing=0.04,
         subplot_titles=(
             f'USD/INR {year} — OHLC & Moving Averages',
-            'RSI(5)',
-            'ATR(5)',
+            'RSI(5) & RSI(20)',
+            'ATR(5) & ATR(20)',
         ),
         row_heights=[0.60, 0.20, 0.20],
         specs=[
@@ -92,22 +94,34 @@ def plot_year(year_df, year, plot_num, output_folder):
             line=dict(color=col, width=1.2, dash='dash')
         ), row=1, col=1)
 
-    # ── Row 2 : RSI(5) ───────────────────────────────────────────────────────
+    # ── Row 2 : RSI(5) + RSI(20) ─────────────────────────────────────────────
     fig.add_trace(go.Scatter(
         x=x, y=year_df['rsi5'],
         name='RSI(5)', mode='lines',
         line=dict(color='#e377c2', width=1.6)
     ), row=2, col=1)
 
+    fig.add_trace(go.Scatter(
+        x=x, y=year_df['rsi20'],
+        name='RSI(20)', mode='lines',
+        line=dict(color='#17becf', width=1.6, dash='dash')
+    ), row=2, col=1)
+
     fig.add_hline(y=70, line_dash='dash', line_color='red',   line_width=1, row=2, col=1)
     fig.add_hline(y=30, line_dash='dash', line_color='green', line_width=1, row=2, col=1)
     fig.add_hline(y=50, line_dash='dot',  line_color='rgba(160,160,160,0.5)', line_width=1, row=2, col=1)
 
-    # ── Row 3 : ATR(5) ───────────────────────────────────────────────────────
+    # ── Row 3 : ATR(5) + ATR(20) ─────────────────────────────────────────────
     fig.add_trace(go.Scatter(
         x=x, y=year_df['atr5'],
         name='ATR(5)', mode='lines',
         line=dict(color='#ff7f0e', width=1.6)
+    ), row=3, col=1)
+
+    fig.add_trace(go.Scatter(
+        x=x, y=year_df['atr20'],
+        name='ATR(20)', mode='lines',
+        line=dict(color='#bcbd22', width=1.6, dash='dash')
     ), row=3, col=1)
 
     # ── Global layout ────────────────────────────────────────────────────────
@@ -164,8 +178,8 @@ def create_index(output_folder, plot_files):
   <h1>USD/INR — Yearly Plots 2003–2019</h1>
   <p>
     Panel 1: OHLC + Moving Averages &nbsp;|&nbsp;
-    Panel 2: RSI(5) &nbsp;|&nbsp;
-    Panel 3: ATR(5)
+    Panel 2: RSI(5) &amp; RSI(20) &nbsp;|&nbsp;
+    Panel 3: ATR(5) &amp; ATR(20)
   </p>
   <ul>{links}</ul>
 </body>

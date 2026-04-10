@@ -30,7 +30,7 @@ def compute_indicators(df):
 # Objective: maximise accuracy subject to abstain <= 5%
 # ============================================================================
 
-def objective(params, feat_vals, target_vals, max_abstain_frac=0.05):
+def objective(params, feat_vals, target_vals, max_abstain_frac=0.005):
     gamma, beta = params
 
     if beta <= gamma:
@@ -205,7 +205,7 @@ def main(input_csv):
     print('(This may take a few seconds)\n')
     gamma, beta = learn_thresholds(df)
 
-    evaluate(df, beta, gamma)
+    evaluate(df, 0.5, 0.25)
 
 
 if __name__ == '__main__':

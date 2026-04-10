@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
 import sys
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
+from scipy.optimize import differential_evolution
+from scipy.stats import binom
 
 
 # ============================================================================
@@ -12,13 +12,14 @@ from sklearn.preprocessing import StandardScaler
 def compute_indicators(df):
     c = df['Close']
 
-    df['sma_5']  = c.ewm(span=6, adjust=False).mean()
-    df['ema_40'] = c.ewm(span=15, adjust=False).mean()
+    df['ema_5']  = c.ewm(span=5,  adjust=False).mean()
+    df['ema_20'] = c.ewm(span=20, adjust=False).mean()
 
-    # Feature: SMA(5) - EMA(40) at time t
-    df['feat'] = df['sma_5'] - df['ema_40']
+    # Feature: day-over-day change in EMA(5) - EMA(20) spread
+    df['feat']      = df['ema_5'] - df['ema_20']
+    df['feat_diff'] = df['feat'].diff()          # feat(t) - feat(t-1)
 
-    # Target: direction of next-day close (t+1 - t), only for evaluation
+    # Target: direction of next-day close (close(t+1) - close(t))
     df['close_delta'] = df['Close'].diff().shift(-1)
     df['target']      = np.where(df['close_delta'] > 0, 1, -1)
 
@@ -26,65 +27,84 @@ def compute_indicators(df):
 
 
 # ============================================================================
-# Learn beta & gamma via logistic regression
+# Objective: maximise accuracy subject to abstain <= 5%
+# ============================================================================
+
+def objective(params, feat_vals, target_vals, max_abstain_frac=0.05):
+    gamma, beta = params
+
+    if beta <= gamma:
+        return 0.0   # invalid: return worst possible accuracy
+
+    mask_up   = feat_vals >  beta
+    mask_down = feat_vals <  gamma
+    mask_abs  = (feat_vals >= gamma) & (feat_vals <= beta)
+
+    n_total   = len(feat_vals)
+    n_abstain = mask_abs.sum()
+
+    # Soft penalty if abstain fraction exceeds 5%
+    abstain_frac = n_abstain / n_total
+    if abstain_frac > max_abstain_frac:
+        penalty = (abstain_frac - max_abstain_frac) * 200
+    else:
+        penalty = 0.0
+
+    n_counted = mask_up.sum() + mask_down.sum()
+    if n_counted == 0:
+        return 0.0
+
+    correct = (
+        (mask_up   & (target_vals ==  1)).sum() +
+        (mask_down & (target_vals == -1)).sum()
+    )
+
+    accuracy = correct / n_counted
+    return -(accuracy - penalty)   # minimise negative accuracy
+
+
+# ============================================================================
+# Learn beta & gamma via differential evolution
 # ============================================================================
 
 def learn_thresholds(df):
-    """
-    Fit a logistic regression on feat -> target.
-    Decision boundary: feat where P(+1|feat) = 0.5, i.e. b0 + b1*feat_scaled = 0.
-    Beta and gamma are placed symmetrically around this boundary such that
-    the abstain zone [gamma, beta] covers at most 0.5% of trading days.
-    """
-    valid = df.dropna(subset=['feat', 'close_delta']).copy()
-    X = valid[['feat']].values
-    y = valid['target'].values
+    valid     = df.dropna(subset=['feat_diff', 'close_delta']).copy()
+    feat_vals = valid['feat_diff'].values
+    tgt_vals  = valid['target'].values
 
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
+    f_min, f_max = feat_vals.min(), feat_vals.max()
+    f_range      = f_max - f_min
 
-    model = LogisticRegression(max_iter=1000)
-    model.fit(X_scaled, y)
+    bounds = [
+        (f_min, f_min + f_range * 0.6),   # gamma
+        (f_min + f_range * 0.4, f_max),   # beta
+    ]
 
-    # Decision boundary in original feat space
-    b0  = model.intercept_[0]
-    b1  = model.coef_[0][0]
-    mu  = scaler.mean_[0]
-    std = scaler.scale_[0]
+    result = differential_evolution(
+        objective,
+        bounds,
+        args=(feat_vals, tgt_vals, 0.05),
+        seed=42,
+        maxiter=2000,
+        popsize=20,
+        tol=1e-9,
+        mutation=(0.5, 1.5),
+        recombination=0.9,
+        polish=True,
+    )
 
-    feat_boundary = mu + std * (-b0 / b1)
-
-    # Binary search for half-width w around boundary so abstained <= 0.5%
-    feat_vals   = valid['feat'].values
-    n_total     = len(feat_vals)
-    max_abstain = int(np.floor(0.05 * n_total))
-
-    lo, hi = 0.0, (feat_vals.max() - feat_vals.min()) / 2
-    for _ in range(60):
-        mid = (lo + hi) / 2
-        abstained = ((feat_vals >= feat_boundary - mid) &
-                     (feat_vals <= feat_boundary + mid)).sum()
-        if abstained <= max_abstain:
-            lo = mid
-        else:
-            hi = mid
-
-    w     = lo
-    gamma = feat_boundary - w
-    beta  = feat_boundary + w
-
-    return model, scaler, beta, gamma, feat_boundary
+    gamma, beta = result.x
+    return gamma, beta
 
 
 # ============================================================================
-# Predict with abstain zone
+# Predict
 # ============================================================================
 
-def predict(feat_series, beta, gamma):
-    predicted = pd.Series(np.nan, index=feat_series.index)
-    predicted[feat_series >  beta]  = 1
-    predicted[feat_series <  gamma] = -1
-    # between gamma and beta -> abstain (remains NaN)
+def predict(feat_diff_series, beta, gamma):
+    predicted = pd.Series(np.nan, index=feat_diff_series.index)
+    predicted[feat_diff_series >  beta]  =  1
+    predicted[feat_diff_series <  gamma] = -1
     return predicted
 
 
@@ -93,31 +113,37 @@ def predict(feat_series, beta, gamma):
 # ============================================================================
 
 def evaluate(df, beta, gamma):
-    valid = df.dropna(subset=['feat', 'close_delta']).copy()
-    valid['predicted'] = predict(valid['feat'], beta, gamma)
+    valid = df.dropna(subset=['feat_diff', 'close_delta']).copy()
+    valid['predicted'] = predict(valid['feat_diff'], beta, gamma)
 
     total_days  = len(valid)
     abstained   = valid['predicted'].isna().sum()
     abstain_pct = abstained / total_days * 100
     counted     = valid.dropna(subset=['predicted'])
+    n_counted   = len(counted)
+
+    overall_correct = (counted['predicted'] == counted['target']).sum()
+    overall_acc     = overall_correct / n_counted * 100
+
+    # Binomial significance test
+    p_value = binom.sf(overall_correct - 1, n_counted, 0.5)
 
     print("=" * 65)
-    print(f"{'USD/INR — Logistic Regression Threshold Model':^65}")
-    print(f"{'Signal: feat = SMA(5) − EMA(40)':^65}")
+    print(f"{'USD/INR — Optimised Threshold Model':^65}")
+    print(f"{'Feature: Δ(EMA5 − EMA20)  i.e. feat(t) − feat(t−1)':^65}")
     print("=" * 65)
-    print(f"  Learned boundary : {(beta+gamma)/2:.4f}")
-    print(f"  Beta  (upper)    : {beta:.4f}")
-    print(f"  Gamma (lower)    : {gamma:.4f}")
-    print(f"  Abstain zone     : [{gamma:.4f}, {beta:.4f}]")
-    print(f"  Total days       : {total_days}")
-    print(f"  Abstained days   : {abstained}  ({abstain_pct:.3f}%)")
-    print(f"  Counted days     : {len(counted)}")
+    print(f"  Beta  (upper threshold) : {beta:.6f}")
+    print(f"  Gamma (lower threshold) : {gamma:.6f}")
+    print(f"  Abstain zone            : [{gamma:.6f}, {beta:.6f}]")
+    print(f"  Total days              : {total_days}")
+    print(f"  Abstained days          : {abstained}  ({abstain_pct:.3f}%)")
+    print(f"  Counted days            : {n_counted}")
     print("=" * 65)
     print(f"{'Year':<10} {'Days':>6} {'Counted':>8} {'Abstained':>10} {'Correct':>8} {'Accuracy':>10}")
     print("-" * 65)
 
-    overall_correct = 0
-    overall_counted = 0
+    overall_correct_check = 0
+    overall_counted_check = 0
 
     for year, grp in valid.groupby(valid.index.year):
         grp_counted  = grp.dropna(subset=['predicted'])
@@ -126,21 +152,29 @@ def evaluate(df, beta, gamma):
         abstained_yr = total_yr - counted_yr
         correct_yr   = (grp_counted['predicted'] == grp_counted['target']).sum()
         acc_yr       = correct_yr / counted_yr * 100 if counted_yr > 0 else float('nan')
-        overall_correct += correct_yr
-        overall_counted += counted_yr
+        overall_correct_check += correct_yr
+        overall_counted_check += counted_yr
         print(f"{year:<10} {total_yr:>6} {counted_yr:>8} {abstained_yr:>10} {correct_yr:>8} {acc_yr:>9.2f}%")
 
     print("-" * 65)
-    overall_acc = overall_correct / overall_counted * 100
-    print(f"{'OVERALL':<10} {total_days:>6} {overall_counted:>8} {abstained:>10} {overall_correct:>8} {overall_acc:>9.2f}%")
+    print(f"{'OVERALL':<10} {total_days:>6} {n_counted:>8} {abstained:>10} {overall_correct:>8} {overall_acc:>9.2f}%")
     print("=" * 65)
 
-    # Baseline: always predict UP
+    # Baseline
     baseline_correct = (counted['target'] == 1).sum()
-    baseline_acc     = baseline_correct / len(counted) * 100
+    baseline_acc     = baseline_correct / n_counted * 100
     print(f"\n  Baseline (always predict UP) : {baseline_acc:.2f}%")
     print(f"  Model accuracy               : {overall_acc:.2f}%")
     print(f"  Lift over baseline           : {overall_acc - baseline_acc:+.2f}%")
+    print(f"\n  Binomial p-value             : {p_value:.6f}")
+    if p_value < 0.01:
+        print(f"  Significance                 : *** highly significant (p < 0.01)")
+    elif p_value < 0.05:
+        print(f"  Significance                 : ** significant (p < 0.05)")
+    elif p_value < 0.10:
+        print(f"  Significance                 : * marginal (p < 0.10)")
+    else:
+        print(f"  Significance                 : not significant (p >= 0.10)")
     print("=" * 65)
 
 
@@ -167,8 +201,9 @@ def main(input_csv):
     print('Computing indicators ...')
     df = compute_indicators(df)
 
-    print('Learning beta & gamma via logistic regression ...\n')
-    model, scaler, beta, gamma, boundary = learn_thresholds(df)
+    print('Optimising beta & gamma via differential evolution ...')
+    print('(This may take a few seconds)\n')
+    gamma, beta = learn_thresholds(df)
 
     evaluate(df, beta, gamma)
 

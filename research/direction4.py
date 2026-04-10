@@ -15,11 +15,9 @@ def compute_indicators(df):
     df['ema_5']  = c.ewm(span=5,  adjust=False).mean()
     df['ema_20'] = c.ewm(span=20, adjust=False).mean()
 
-    # Feature: day-over-day change in EMA(5) - EMA(20) spread
     df['feat']      = df['ema_5'] - df['ema_20']
-    df['feat_diff'] = df['feat'].diff()          # feat(t) - feat(t-1)
+    df['feat_diff'] = df['feat'].diff()
 
-    # Target: direction of next-day close (close(t+1) - close(t))
     df['close_delta'] = df['Close'].diff().shift(-1)
     df['target']      = np.where(df['close_delta'] > 0, 1, -1)
 
@@ -27,14 +25,14 @@ def compute_indicators(df):
 
 
 # ============================================================================
-# Objective: maximise accuracy subject to abstain <= 5%
+# Objective
 # ============================================================================
 
 def objective(params, feat_vals, target_vals, max_abstain_frac=0.05):
     gamma, beta = params
 
     if beta <= gamma:
-        return 0.0   # invalid: return worst possible accuracy
+        return 0.0
 
     mask_up   = feat_vals >  beta
     mask_down = feat_vals <  gamma
@@ -43,7 +41,6 @@ def objective(params, feat_vals, target_vals, max_abstain_frac=0.05):
     n_total   = len(feat_vals)
     n_abstain = mask_abs.sum()
 
-    # Soft penalty if abstain fraction exceeds 5%
     abstain_frac = n_abstain / n_total
     if abstain_frac > max_abstain_frac:
         penalty = (abstain_frac - max_abstain_frac) * 200
@@ -60,11 +57,11 @@ def objective(params, feat_vals, target_vals, max_abstain_frac=0.05):
     )
 
     accuracy = correct / n_counted
-    return -(accuracy - penalty)   # minimise negative accuracy
+    return -(accuracy - penalty)
 
 
 # ============================================================================
-# Learn beta & gamma via differential evolution
+# Learn beta & gamma
 # ============================================================================
 
 def learn_thresholds(df):
@@ -76,8 +73,8 @@ def learn_thresholds(df):
     f_range      = f_max - f_min
 
     bounds = [
-        (f_min, f_min + f_range * 0.6),   # gamma
-        (f_min + f_range * 0.4, f_max),   # beta
+        (f_min, f_min + f_range * 0.6),
+        (f_min + f_range * 0.4, f_max),
     ]
 
     result = differential_evolution(
@@ -98,14 +95,45 @@ def learn_thresholds(df):
 
 
 # ============================================================================
-# Predict
+# Adaptive prediction (row-by-row, path-dependent)
 # ============================================================================
 
-def predict(feat_diff_series, beta, gamma):
-    predicted = pd.Series(np.nan, index=feat_diff_series.index)
-    predicted[feat_diff_series >  beta]  = 1
-    predicted[feat_diff_series <  gamma] = -1
-    return predicted
+def predict_adaptive(valid_df, beta, gamma):
+    """
+    Walk through rows in order. For each row:
+      - Check the last 2 non-abstained predictions.
+      - If both were wrong  → flip mode: feat>beta → -1, feat<gamma → +1
+      - Otherwise           → normal mode: feat>beta → +1, feat<gamma → -1
+      - Abstain zone always abstains regardless of mode.
+    """
+    predictions = []
+    history     = []   # (prediction, target) for non-abstained rows only
+
+    for _, row in valid_df.iterrows():
+        feat   = row['feat_diff']
+        target = row['target']
+
+        # --- determine zone ---
+        if feat > beta:
+            raw_signal = 1
+        elif feat < gamma:
+            raw_signal = -1
+        else:
+            predictions.append(np.nan)   # abstain regardless of mode
+            continue
+
+        # --- flip check (only when we have >= 2 prior non-abstained rows) ---
+        if len(history) >= 2:
+            last_two = history[-2:]
+            both_wrong = all(pred != tgt for pred, tgt in last_two)
+        else:
+            both_wrong = False
+
+        final_signal = -raw_signal if both_wrong else raw_signal
+        predictions.append(final_signal)
+        history.append((final_signal, target))
+
+    return predictions
 
 
 # ============================================================================
@@ -114,7 +142,9 @@ def predict(feat_diff_series, beta, gamma):
 
 def evaluate(df, beta, gamma):
     valid = df.dropna(subset=['feat_diff', 'close_delta']).copy()
-    valid['predicted'] = predict(valid['feat_diff'], beta, gamma)
+
+    # Adaptive path-dependent predictions
+    valid['predicted'] = predict_adaptive(valid, beta, gamma)
 
     total_days  = len(valid)
     abstained   = valid['predicted'].isna().sum()
@@ -125,12 +155,11 @@ def evaluate(df, beta, gamma):
     overall_correct = (counted['predicted'] == counted['target']).sum()
     overall_acc     = overall_correct / n_counted * 100
 
-    # Binomial significance test
     p_value = binom.sf(overall_correct - 1, n_counted, 0.5)
 
     print("=" * 65)
-    print(f"{'USD/INR — Optimised Threshold Model':^65}")
-    print(f"{'Feature: Δ(EMA5 − EMA20)  i.e. feat(t) − feat(t−1)':^65}")
+    print(f"{'USD/INR — Adaptive Threshold Model':^65}")
+    print(f"{'Feature: Δ(EMA5 − EMA20)  |  Flip if last 2 both wrong':^65}")
     print("=" * 65)
     print(f"  Beta  (upper threshold) : {beta:.6f}")
     print(f"  Gamma (lower threshold) : {gamma:.6f}")
@@ -160,7 +189,6 @@ def evaluate(df, beta, gamma):
     print(f"{'OVERALL':<10} {total_days:>6} {n_counted:>8} {abstained:>10} {overall_correct:>8} {overall_acc:>9.2f}%")
     print("=" * 65)
 
-    # Baseline
     baseline_correct = (counted['target'] == 1).sum()
     baseline_acc     = baseline_correct / n_counted * 100
     print(f"\n  Baseline (always predict UP) : {baseline_acc:.2f}%")
@@ -195,7 +223,6 @@ def main(input_csv):
         df[col] = pd.to_numeric(df[col], errors='coerce')
     df = df.dropna(subset=['Open', 'High', 'Low', 'Close'])
 
-    # Filter to 2003-2019
     df = df[(df.index.year >= 2003) & (df.index.year <= 2019)]
 
     print('Computing indicators ...')

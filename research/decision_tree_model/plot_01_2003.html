@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>USD/INR 2003 — Decision Tree</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@700;800&display=swap');
+  *    { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #080c10; color: #c9d1d9;
+          font-family: 'JetBrains Mono', monospace; padding: 24px; }
+  h1   { text-align: center; color: #e2b714;
+          font-family: 'Syne', sans-serif; font-size: 1.6em;
+          letter-spacing: -0.02em; margin-bottom: 4px; }
+  .sub { text-align: center; color: #4a5568; font-size: 0.72em;
+          margin-bottom: 16px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .stats { display: flex; gap: 12px; justify-content: center;
+            margin: 14px 0; flex-wrap: wrap; }
+  .sb  { background: #0d1117; border: 1px solid #1e2732;
+          border-radius: 4px; padding: 10px 18px; text-align: center;
+          position: relative; overflow: hidden; }
+  .sb::before { content: ''; position: absolute; top: 0; left: 0;
+                 width: 100%; height: 2px; background: #e2b714; }
+  .sv  { font-size: 1.5em; color: #e2b714; font-weight: 700; }
+  .sl  { font-size: 0.65em; color: #4a5568; margin-top: 3px;
+          text-transform: uppercase; letter-spacing: 0.1em; }
+  .acc .sv { color: #50c864; }
+  .acc::before { background: #50c864; }
+  .leg { display: flex; gap: 20px; justify-content: center; margin: 10px 0;
+          font-size: 0.72em; flex-wrap: wrap; color: #4a5568; }
+  .li  { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .chart-wrap { background: #0d1117; border: 1px solid #1e2732;
+                 border-radius: 6px; padding: 16px; margin: 10px 0; }
+  canvas { max-height: 300px; }
+  .back { text-align: center; margin-top: 18px; font-size: 0.8em; }
+  .back a { color: #e2b714; text-decoration: none; }
+</style>
+</head>
+<body>
+<h1>USD/INR Next-Day Prediction — 2003</h1>
+<div class="sub">Decision Tree Direction Classifier · GARCH(1,1) Magnitude</div>
+
+<div class="stats">
+  <div class="sb"><div class="sv">0%</div><div class="sl">Avg Abs Error</div></div>
+  <div class="sb"><div class="sv">0%</div><div class="sl">65th Pct Error</div></div>
+  <div class="sb acc"><div class="sv">0%</div><div class="sl">Direction Accuracy</div></div>
+  <div class="sb"><div class="sv">0</div><div class="sl">Trading Days</div></div>
+  <div class="sb"><div class="sv">0</div><div class="sl">High Vol</div></div>
+  <div class="sb"><div class="sv">0</div><div class="sl">Low Vol</div></div>
+  <div class="sb"><div class="sv">0</div><div class="sl">Medium Vol</div></div>
+</div>
+
+<div class="leg">
+  <div class="li"><div class="dot" style="background:#ff5050"></div>High vol: full GARCH shift</div>
+  <div class="li"><div class="dot" style="background:#50c864"></div>Low vol: flat</div>
+  <div class="li"><div class="dot" style="background:#648cff"></div>Medium vol: half GARCH shift</div>
+</div>
+
+<div class="chart-wrap"><canvas id="c1"></canvas></div>
+<div class="chart-wrap"><canvas id="c2"></canvas></div>
+<div class="chart-wrap"><canvas id="c3"></canvas></div>
+
+<div class="back"><a href="index.html">← Back to Index</a></div>
+
+<script>
+const labels    = [];
+const actual    = [];
+const predicted = [];
+const errorInr  = [];
+const errorPct  = [];
+const ptColors  = [];
+const grid      = 'rgba(255,255,255,0.04)';
+const tick      = '#4a5568';
+const base = {
+  responsive: true, animation: false,
+  interaction: { mode: 'index', intersect: false },
+  plugins: { legend: { labels: { color: '#8b949e',
+    font: { family: 'JetBrains Mono', size: 11 } } } },
+  scales: {
+    x: { ticks: { color: tick, maxTicksLimit: 12, font: { size: 10 } },
+           grid: { color: grid } },
+    y: { ticks: { color: tick }, grid: { color: grid } },
+  }
+};
+new Chart(document.getElementById('c1'), {
+  type: 'line',
+  data: { labels, datasets: [
+    { label: 'Actual Close', data: actual, borderColor: '#26a69a',
+       backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0.1 },
+    { label: 'Predicted Close (DT)', data: predicted, borderColor: '#e2b714',
+       backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4,3],
+       pointRadius: 3, pointBackgroundColor: ptColors, tension: 0.1 },
+  ]},
+  options: { ...base, plugins: { ...base.plugins,
+    title: { display: true, text: 'Actual vs Predicted Close Price',
+              color: '#e2b714', font: { size: 13, family: 'Syne' } } } }
+});
+const bc = errorInr.map(v => v === null ? 'grey' :
+  v >= 0 ? 'rgba(38,166,154,0.7)' : 'rgba(239,83,80,0.7)');
+new Chart(document.getElementById('c2'), {
+  type: 'bar',
+  data: { labels, datasets: [{ label: 'Error (INR)', data: errorInr,
+    backgroundColor: bc, borderWidth: 0 }] },
+  options: { ...base, plugins: { ...base.plugins,
+    title: { display: true, text: 'Prediction Error: Predicted − Actual (INR)',
+              color: '#e2b714', font: { size: 13, family: 'Syne' } } } }
+});
+new Chart(document.getElementById('c3'), {
+  type: 'line',
+  data: { labels, datasets: [{ label: 'Abs Error (%)',
+    data: errorPct.map(v => v === null ? null : Math.abs(v)),
+    borderColor: '#e377c2', backgroundColor: 'rgba(227,119,194,0.08)',
+    borderWidth: 1.5, pointRadius: 0, fill: true, tension: 0.1 }] },
+  options: { ...base, plugins: { ...base.plugins,
+    title: { display: true, text: 'Absolute Error (%)',
+              color: '#e2b714', font: { size: 13, family: 'Syne' } } } }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>USD/INR Decision Tree — Test (2021–2023)</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@700;800&display=swap');
+  * { box-sizing: border-box; }
+  body { background: #080c10; color: #c9d1d9;
+          font-family: 'JetBrains Mono', monospace;
+          max-width: 1300px; margin: 40px auto; padding: 0 24px; }
+  h1 { text-align: center; color: #e2b714;
+        font-family: 'Syne', sans-serif; font-size: 2em;
+        letter-spacing: -0.02em; margin-bottom: 4px; }
+  h2 { color: #e2b714; font-family: 'Syne', sans-serif;
+        border-bottom: 1px solid #1e2732;
+        padding-bottom: 6px; margin: 28px 0 12px; font-size: 1.1em; }
+  p  { text-align: center; color: #4a5568; margin: 6px 0; font-size: 0.8em;
+        text-transform: uppercase; letter-spacing: 0.08em; }
+  .stats { display: flex; gap: 16px; justify-content: center;
+            margin: 20px 0; flex-wrap: wrap; }
+  .sb { background: #0d1117; border: 1px solid #1e2732;
+         border-radius: 4px; padding: 14px 22px; text-align: center;
+         position: relative; overflow: hidden; }
+  .sb::before { content: ''; position: absolute; top: 0; left: 0;
+                 width: 100%; height: 2px; background: #e2b714; }
+  .sb.acc::before { background: #50c864; }
+  .sv { font-size: 1.9em; color: #e2b714; font-weight: 700; }
+  .sb.acc .sv { color: #50c864; }
+  .sl { font-size: 0.7em; color: #4a5568; margin-top: 4px;
+         text-transform: uppercase; letter-spacing: 0.1em; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.78em; margin: 10px 0; }
+  th { background: #0d1117; color: #e2b714; padding: 10px 14px; text-align: right;
+        border: 1px solid #1e2732; white-space: nowrap;
+        font-family: 'Syne', sans-serif; }
+  td { padding: 8px 14px; text-align: right; border: 1px solid #1a2030; }
+  tr:nth-child(even) { background: #0d1117; }
+  tr:hover { background: #111820; }
+  ul { list-style: none; padding: 0; columns: 3; gap: 10px; }
+  li { margin: 8px 0; }
+  a  { color: #e2b714; text-decoration: none; }
+  a:hover { color: #26a69a; }
+  .chart-wrap { background: #0d1117; border: 1px solid #1e2732;
+                 border-radius: 6px; padding: 16px; }
+  code { background: #0d1117; padding: 2px 6px; border-radius: 3px; color: #79c0ff; }
+</style>
+</head>
+<body>
+<h1>USD/INR Decision Tree — Test (2021–2023)</h1>
+<p>Zero lookahead · Tree trained on 2003-2020 only · GARCH + regime identical</p>
+<p style="text-align:center;margin:10px 0"><a href="index.html" style="color:#e2b714">→ Go to Train Results (2003–2020)</a></p>
+<div class="stats">
+  <div class="sb"><div class="sv">0.2082%</div><div class="sl">Avg Abs Error</div></div>
+  <div class="sb"><div class="sv">0.1594%</div><div class="sl">Median Error</div></div>
+  <div class="sb"><div class="sv">0.2307%</div><div class="sl">65th Pct Error</div></div>
+  <div class="sb"><div class="sv">0.4542%</div><div class="sl">90th Pct Error</div></div>
+  <div class="sb acc"><div class="sv">74.82%</div><div class="sl">Direction Accuracy</div></div>
+  <div class="sb"><div class="sv">695</div><div class="sl">Trading Days</div></div>
+</div>
+
+<h2>Yearly Summary</h2>
+<table><thead><tr><th>Year</th><th>Days</th><th>High Vol</th><th>Low Vol</th><th>Medium Vol</th><th>Dir Acc (%)</th><th>Avg Error (INR)</th><th>Avg Error (%)</th><th>65th Pct Err (%)</th><th>Max Error (%)</th></tr></thead><tbody><tr><td>2021.0</td><td>261.0</td><td>9.0</td><td>176.0</td><td>76.0</td><td>73.56</td><td>0.1574</td><td>0.2127</td><td>0.2286</td><td>1.0382</td></tr>
+<tr><td>2022.0</td><td>260.0</td><td>9.0</td><td>160.0</td><td>91.0</td><td>76.92</td><td>0.1873</td><td>0.2375</td><td>0.2756</td><td>1.1016</td></tr>
+<tr><td>2023.0</td><td>174.0</td><td>5.0</td><td>95.0</td><td>74.0</td><td>73.56</td><td>0.1296</td><td>0.1576</td><td>0.1657</td><td>0.6418</td></tr>
+</tbody></table>
+<h2>Per-Year Plots</h2>
+<ul><li><a href="plot_101_2021.html" target="_blank">plot_101_2021.html</a></li>
+<li><a href="plot_102_2022.html" target="_blank">plot_102_2022.html</a></li>
+<li><a href="plot_103_2023.html" target="_blank">plot_103_2023.html</a></li></ul>
+</body>
+</html>

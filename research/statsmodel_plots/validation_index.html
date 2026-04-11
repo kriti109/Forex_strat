@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>USD/INR Next-Day Close Prediction (Validation: 2022–2023)</title>
+<style>
+  * { box-sizing: border-box; }
+  body { background: #0d1117; color: #c9d1d9; font-family: 'Courier New', monospace;
+          max-width: 1300px; margin: 40px auto; padding: 0 24px; }
+  h1 { text-align: center; color: #58a6ff; font-size: 2em; }
+  h2 { color: #58a6ff; border-bottom: 1px solid #30363d; padding-bottom: 6px; margin: 28px 0 12px; }
+  p  { text-align: center; color: #8b949e; margin: 6px 0; }
+  .stats { display: flex; gap: 20px; justify-content: center; margin: 20px 0; flex-wrap: wrap; }
+  .sb { background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+         padding: 14px 24px; text-align: center; }
+  .sv { font-size: 2em; color: #ff8c00; font-weight: bold; }
+  .sl { font-size: 0.8em; color: #8b949e; margin-top: 4px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.82em; margin: 10px 0; }
+  th { background: #161b22; color: #58a6ff; padding: 10px 14px; text-align: right;
+        border: 1px solid #30363d; white-space: nowrap; }
+  td { padding: 8px 14px; text-align: right; border: 1px solid #21262d; }
+  tr:nth-child(even) { background: #161b22; }
+  tr:hover { background: #1f2937; }
+  ul { list-style: none; padding: 0; columns: 3; gap: 10px; }
+  li { margin: 8px 0; }
+  a  { color: #58a6ff; text-decoration: none; }
+  a:hover { color: #ff8c00; }
+  .legend { display: flex; gap: 24px; justify-content: center; margin: 14px 0;
+             font-size: 0.82em; flex-wrap: wrap; }
+  .li  { display: flex; align-items: center; gap: 7px; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  code { background: #161b22; padding: 2px 6px; border-radius: 4px; color: #79c0ff; }
+</style>
+</head>
+<body>
+<h1>USD/INR Next-Day Close Prediction (Validation: 2022–2023)</h1>
+<p>Frozen gamma/beta learned on 2003–2021 | GARCH + regime computed on full series</p>
+<p style="text-align:center;margin-top:10px"><a href="index.html">→ Go to Train Results (2003-2019)</a></p>
+
+<div class="stats">
+  <div class="sb"><div class="sv">0.2415%</div><div class="sl">Overall Avg Abs Error</div></div>
+  <div class="sb"><div class="sv">0.1766%</div><div class="sl">Overall Median Error</div></div>
+  <div class="sb"><div class="sv">0.2657%</div><div class="sl">Overall 65th Pct Error</div></div>
+  <div class="sb"><div class="sv">0.5449%</div><div class="sl">Overall 90th Pct Error</div></div>
+  <div class="sb"><div class="sv">434</div><div class="sl">Total Trading Days</div></div>
+</div>
+
+<div class="legend">
+  <div class="li"><div class="dot" style="background:#ff5050"></div>
+    <b>High vol</b>: <code>std5 &gt; std14 &gt; std25</code> &rarr; <code>close + dir &times; &sigma;_GARCH &times; close</code></div>
+  <div class="li"><div class="dot" style="background:#50c864"></div>
+    <b>Low vol</b>: <code>std5 &lt; std14 &lt; std25</code> &rarr; same price as today</div>
+  <div class="li"><div class="dot" style="background:#648cff"></div>
+    <b>Medium vol</b>: everything else &rarr; <code>close + dir &times; 0.5&sigma; &times; close</code></div>
+</div>
+
+<h2>Yearly Summary</h2>
+<table>
+  <thead><tr><th>Year</th><th>Days</th><th>High Vol</th><th>Low Vol</th><th>Medium Vol</th><th>Avg Error (INR)</th><th>Avg Error (%)</th><th>65th Pct Err (%)</th><th>Max Error (%)</th></tr></thead>
+  <tbody><tr><td>2022.0</td><td>260.0</td><td>9.0</td><td>160.0</td><td>91.0</td><td>0.2208</td><td>0.2808</td><td>0.3106</td><td>1.3941</td></tr>
+<tr><td>2023.0</td><td>174.0</td><td>5.0</td><td>95.0</td><td>74.0</td><td>0.1503</td><td>0.1827</td><td>0.1887</td><td>0.7155</td></tr>
+</tbody>
+</table>
+
+<h2>Per-Year Interactive Plots</h2>
+<p style="font-size:0.82em">Each plot: actual vs predicted close &middot; error bar chart &middot; abs error % &mdash; coloured by regime</p>
+<ul><li><a href="plot_101_2022.html" target="_blank">plot_101_2022.html</a></li>
+<li><a href="plot_102_2023.html" target="_blank">plot_102_2023.html</a></li></ul>
+</body>
+</html>

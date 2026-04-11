@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>GB USD/INR 2004-2019</title>
+<style>
+  * { box-sizing:border-box; }
+  body { background:#0d1117; color:#c9d1d9; font-family:'Courier New',monospace;
+          max-width:1300px; margin:40px auto; padding:0 24px; }
+  h1   { text-align:center; color:#58a6ff; font-size:1.9em; margin-bottom:4px; }
+  h2   { color:#58a6ff; border-bottom:1px solid #30363d; padding-bottom:5px;
+          margin:26px 0 12px; }
+  p    { text-align:center; color:#8b949e; margin:5px 0; font-size:0.87em; }
+  .stats { display:flex; gap:18px; justify-content:center; margin:20px 0; flex-wrap:wrap; }
+  .sb  { background:#161b22; border:1px solid #30363d; border-radius:8px;
+          padding:14px 22px; text-align:center; }
+  .sv  { font-size:1.8em; color:#ff8c00; font-weight:bold; }
+  .sl  { font-size:0.75em; color:#8b949e; margin-top:4px; }
+  table { border-collapse:collapse; width:100%; font-size:0.81em; margin:10px 0; }
+  th   { background:#161b22; color:#58a6ff; padding:9px 13px; text-align:right;
+          border:1px solid #30363d; white-space:nowrap; }
+  td   { padding:7px 13px; text-align:right; border:1px solid #21262d; }
+  tr:nth-child(even) { background:#161b22; }
+  tr:hover { background:#1f2937; }
+  ul.plots { list-style:none; padding:0; columns:3; gap:10px; }
+  ul.feats { list-style:none; padding:0; display:flex; flex-wrap:wrap; gap:8px; margin:8px 0; }
+  li   { margin:5px 0; }
+  a    { color:#58a6ff; text-decoration:none; }
+  a:hover { color:#ff8c00; }
+  code { background:#161b22; padding:3px 8px; border-radius:4px;
+          color:#79c0ff; font-size:0.88em; }
+  .fi-link { text-align:center; margin:10px 0; }
+</style>
+</head>
+<body>
+<h1>USD/INR &mdash; Gradient Boosting Next-Day Close</h1>
+<p>HistGradientBoostingRegressor &nbsp;&middot;&nbsp;
+   Walk-forward validation 2004&ndash;2019 &nbsp;&middot;&nbsp;
+   Train on all prior years, predict next year</p>
+
+<div class="stats">
+  <div class="sb"><div class="sv">1.0401</div><div class="sl">Overall MAE (INR)</div></div>
+  <div class="sb"><div class="sv">1.8782</div><div class="sl">Overall RMSE (INR)</div></div>
+  <div class="sb"><div class="sv">1.8997%</div><div class="sl">Avg Abs Error %</div></div>
+  <div class="sb"><div class="sv">1.1698%</div><div class="sl">65th Pct Error %</div></div>
+  <div class="sb"><div class="sv">6.1554%</div><div class="sl">90th Pct Error %</div></div>
+  <div class="sb"><div class="sv">3,881</div><div class="sl">Total Days (2004-2019)</div></div>
+</div>
+
+<h2>Features (15 total)</h2>
+<ul class="feats"><li><code>garch_vol</code></li><li><code>std5</code></li><li><code>std14</code></li><li><code>std25</code></li><li><code>feat</code></li><li><code>regime_enc</code></li><li><code>ret_lag1</code></li><li><code>ret_lag2</code></li><li><code>ret_lag3</code></li><li><code>close_lag1</code></li><li><code>close_lag2</code></li><li><code>close_lag3</code></li><li><code>rsi14</code></li><li><code>atr14</code></li><li><code>dow</code></li></ul>
+
+<h2>Feature Importance</h2>
+<div class="fi-link">
+  <a href="feature_importance.html" target="_blank">Open Feature Importance Chart &rarr;</a>
+</div>
+
+<h2>Yearly Results</h2>
+<table>
+  <thead><tr><th>Year</th><th>Days</th><th>MAE (INR)</th><th>RMSE (INR)</th><th>Avg Error (%)</th><th>65th Pct Err (%)</th><th>90th Pct Err (%)</th><th>Max Error (%)</th></tr></thead>
+  <tbody><tr><td>2005.0</td><td>259.0</td><td>0.4199</td><td>0.4715</td><td>0.9606</td><td>1.2251</td><td>1.5258</td><td>2.5818</td></tr>
+<tr><td>2006.0</td><td>260.0</td><td>0.1921</td><td>0.2454</td><td>0.4235</td><td>0.4811</td><td>0.8624</td><td>1.7815</td></tr>
+<tr><td>2007.0</td><td>258.0</td><td>2.5016</td><td>2.9435</td><td>6.246</td><td>8.0895</td><td>10.7629</td><td>11.2507</td></tr>
+<tr><td>2008.0</td><td>242.0</td><td>0.8677</td><td>1.3338</td><td>1.8523</td><td>1.6317</td><td>5.5274</td><td>8.0594</td></tr>
+<tr><td>2009.0</td><td>260.0</td><td>0.8116</td><td>1.0985</td><td>1.6456</td><td>1.5631</td><td>4.1568</td><td>6.175</td></tr>
+<tr><td>2010.0</td><td>261.0</td><td>0.2404</td><td>0.3166</td><td>0.5261</td><td>0.5882</td><td>1.1424</td><td>2.1617</td></tr>
+<tr><td>2011.0</td><td>259.0</td><td>0.3195</td><td>0.5322</td><td>0.6544</td><td>0.5822</td><td>1.5302</td><td>4.68</td></tr>
+<tr><td>2012.0</td><td>261.0</td><td>1.6987</td><td>2.1107</td><td>3.0989</td><td>4.5456</td><td>5.7605</td><td>7.9482</td></tr>
+<tr><td>2013.0</td><td>260.0</td><td>3.6706</td><td>4.8946</td><td>5.9338</td><td>9.4404</td><td>11.8817</td><td>18.6915</td></tr>
+<tr><td>2014.0</td><td>261.0</td><td>0.3476</td><td>0.4426</td><td>0.5696</td><td>0.6678</td><td>1.1915</td><td>2.128</td></tr>
+<tr><td>2015.0</td><td>261.0</td><td>1.4064</td><td>1.836</td><td>2.1504</td><td>2.8892</td><td>4.954</td><td>6.0506</td></tr>
+<tr><td>2016.0</td><td>261.0</td><td>0.7382</td><td>0.9371</td><td>1.0915</td><td>1.2515</td><td>2.3769</td><td>3.5054</td></tr>
+<tr><td>2017.0</td><td>258.0</td><td>0.2543</td><td>0.3171</td><td>0.392</td><td>0.4815</td><td>0.7324</td><td>1.9032</td></tr>
+<tr><td>2018.0</td><td>261.0</td><td>1.7849</td><td>2.7077</td><td>2.488</td><td>2.8968</td><td>7.2664</td><td>8.9624</td></tr>
+<tr><td>2019.0</td><td>259.0</td><td>0.3334</td><td>0.4272</td><td>0.4733</td><td>0.559</td><td>1.0144</td><td>2.2095</td></tr>
+</tbody>
+</table>
+
+<h2>Per-Year Plots</h2>
+<p>Actual vs Predicted &middot; Error bar &middot; Abs Error % &mdash; dots coloured by vol regime</p>
+<ul class="plots"><li><a href="plot_02_2005.html" target="_blank">plot_02_2005.html</a></li>
+<li><a href="plot_03_2006.html" target="_blank">plot_03_2006.html</a></li>
+<li><a href="plot_04_2007.html" target="_blank">plot_04_2007.html</a></li>
+<li><a href="plot_05_2008.html" target="_blank">plot_05_2008.html</a></li>
+<li><a href="plot_06_2009.html" target="_blank">plot_06_2009.html</a></li>
+<li><a href="plot_07_2010.html" target="_blank">plot_07_2010.html</a></li>
+<li><a href="plot_08_2011.html" target="_blank">plot_08_2011.html</a></li>
+<li><a href="plot_09_2012.html" target="_blank">plot_09_2012.html</a></li>
+<li><a href="plot_10_2013.html" target="_blank">plot_10_2013.html</a></li>
+<li><a href="plot_11_2014.html" target="_blank">plot_11_2014.html</a></li>
+<li><a href="plot_12_2015.html" target="_blank">plot_12_2015.html</a></li>
+<li><a href="plot_13_2016.html" target="_blank">plot_13_2016.html</a></li>
+<li><a href="plot_14_2017.html" target="_blank">plot_14_2017.html</a></li>
+<li><a href="plot_15_2018.html" target="_blank">plot_15_2018.html</a></li>
+<li><a href="plot_16_2019.html" target="_blank">plot_16_2019.html</a></li></ul>
+</body>
+</html>

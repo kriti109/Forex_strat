@@ -23,25 +23,43 @@ def compute_indicators(df):
 
 
 # ============================================================================
+# Heikin-Ashi candles
+# ============================================================================
+
+def compute_ha(df):
+    ha = pd.DataFrame(index=df.index)
+
+    ha['Close'] = (df['Open'] + df['High'] + df['Low'] + df['Close']) / 4
+
+    ha_open = np.zeros(len(df))
+    ha_open[0] = (df['Open'].iloc[0] + df['Close'].iloc[0]) / 2
+    for i in range(1, len(df)):
+        ha_open[i] = (ha_open[i - 1] + ha['Close'].iloc[i - 1]) / 2
+    ha['Open'] = ha_open
+
+    ha['High'] = pd.concat([df['High'], ha['Open'], ha['Close']], axis=1).max(axis=1)
+    ha['Low']  = pd.concat([df['Low'],  ha['Open'], ha['Close']], axis=1).min(axis=1)
+
+    return ha
+
+
+# ============================================================================
 # Kalman filter
 # Q : process noise  — higher = filter tracks price more aggressively
 # R : observation noise — higher = smoother output, less reactive
 # ============================================================================
 
 def kalman_filter(prices, Q=1e-5, R=1e-2):
-    n          = len(prices)
-    filtered   = np.zeros(n)
-    gains      = np.zeros(n)
+    n        = len(prices)
+    filtered = np.zeros(n)
+    gains    = np.zeros(n)
 
-    x = prices[0]   # initial state estimate
-    P = 1.0         # initial error covariance
+    x = prices[0]
+    P = 1.0
 
     for i, z in enumerate(prices):
-        # Predict
         P = P + Q
-
-        # Update
-        K = P / (P + R)   # Kalman gain
+        K = P / (P + R)
         x = x + K * (z - x)
         P = (1 - K) * P
 
@@ -60,23 +78,20 @@ def plot_year(year_df, year, plot_num, output_folder, Q=1e-5, R=1e-2):
     prices = year_df['Close'].values
 
     kalman_line, kalman_gain = kalman_filter(prices, Q=Q, R=R)
-
-    # ── 2-panel layout ──────────────────────────────────────────────────────
-    # Row 1 : OHLC + MAs + Kalman overlay
-    # Row 2 : Kalman gain
+    ha = compute_ha(year_df)
 
     fig = make_subplots(
         rows=2, cols=1,
         shared_xaxes=True,
         vertical_spacing=0.04,
         subplot_titles=(
-            f'USD/INR {year} — OHLC, Moving Averages & Kalman Filter',
+            f'USD/INR {year} — OHLC, HA, Moving Averages & Kalman Filter',
             'Kalman Gain',
         ),
         row_heights=[0.75, 0.25],
     )
 
-    # ── Row 1 : Candlestick ──────────────────────────────────────────────────
+    # ── Regular candlestick ──────────────────────────────────────────────────
     fig.add_trace(go.Candlestick(
         x=x,
         open=year_df['Open'], high=year_df['High'],
@@ -84,10 +99,49 @@ def plot_year(year_df, year, plot_num, output_folder, Q=1e-5, R=1e-2):
         name='OHLC',
         increasing_line_color='#26a69a', increasing_fillcolor='#26a69a',
         decreasing_line_color='#ef5350', decreasing_fillcolor='#ef5350',
-        line=dict(width=1)
+        line=dict(width=1),
+        opacity=0.6,
     ), row=1, col=1)
 
-    # SMAs
+    # ── Heikin-Ashi candles (yellow=bullish, purple=bearish) ─────────────────
+    ha_bull = ha['Close'] >= ha['Open']
+
+    fig.add_trace(go.Candlestick(
+        x=x[ha_bull],
+        open=ha.loc[ha_bull,  'Open'],
+        high=ha.loc[ha_bull,  'High'],
+        low=ha.loc[ha_bull,   'Low'],
+        close=ha.loc[ha_bull, 'Close'],
+        name='HA Bullish',
+        increasing_line_color='#fdd835', increasing_fillcolor='#fdd835',
+        decreasing_line_color='#fdd835', decreasing_fillcolor='#fdd835',
+        line=dict(width=1),
+        opacity=0.75,
+        showlegend=True,
+    ), row=1, col=1)
+
+    fig.add_trace(go.Candlestick(
+        x=x[~ha_bull],
+        open=ha.loc[~ha_bull,  'Open'],
+        high=ha.loc[~ha_bull,  'High'],
+        low=ha.loc[~ha_bull,   'Low'],
+        close=ha.loc[~ha_bull, 'Close'],
+        name='HA Bearish',
+        increasing_line_color='#8e24aa', increasing_fillcolor='#8e24aa',
+        decreasing_line_color='#8e24aa', decreasing_fillcolor='#8e24aa',
+        line=dict(width=1),
+        opacity=0.75,
+        showlegend=True,
+    ), row=1, col=1)
+
+    # ── Close price line ─────────────────────────────────────────────────────
+    fig.add_trace(go.Scatter(
+        x=x, y=year_df['Close'],
+        name='Close', mode='lines',
+        line=dict(color='#ffffff', width=1.2, dash='dot'),
+    ), row=1, col=1)
+
+    # ── SMAs ─────────────────────────────────────────────────────────────────
     sma_colors = {5: '#1f77b4', 20: '#ff7f0e', 40: '#9467bd', 75: '#8c564b'}
     for w, col in sma_colors.items():
         fig.add_trace(go.Scatter(
@@ -96,7 +150,7 @@ def plot_year(year_df, year, plot_num, output_folder, Q=1e-5, R=1e-2):
             line=dict(color=col, width=1.2)
         ), row=1, col=1)
 
-    # EMAs
+    # ── EMAs ─────────────────────────────────────────────────────────────────
     ema_colors = {20: '#d62728', 40: '#2ca02c', 75: '#e377c2'}
     for w, col in ema_colors.items():
         fig.add_trace(go.Scatter(
@@ -105,14 +159,14 @@ def plot_year(year_df, year, plot_num, output_folder, Q=1e-5, R=1e-2):
             line=dict(color=col, width=1.2, dash='dash')
         ), row=1, col=1)
 
-    # Kalman overlay on candles
+    # ── Kalman overlay ───────────────────────────────────────────────────────
     fig.add_trace(go.Scatter(
         x=x, y=kalman_line,
         name='Kalman (filtered)', mode='lines',
         line=dict(color='#00bcd4', width=2.2),
     ), row=1, col=1)
 
-    # ── Row 2 : Kalman gain ──────────────────────────────────────────────────
+    # ── Kalman gain panel ────────────────────────────────────────────────────
     fig.add_trace(go.Scatter(
         x=x, y=kalman_gain,
         name='Kalman Gain (K)', mode='lines',
@@ -121,7 +175,7 @@ def plot_year(year_df, year, plot_num, output_folder, Q=1e-5, R=1e-2):
         fillcolor='rgba(255,152,0,0.12)'
     ), row=2, col=1)
 
-    # ── Global layout ────────────────────────────────────────────────────────
+    # ── Layout ───────────────────────────────────────────────────────────────
     rb = [dict(bounds=['sat', 'mon'])]
 
     fig.update_layout(
@@ -131,7 +185,7 @@ def plot_year(year_df, year, plot_num, output_folder, Q=1e-5, R=1e-2):
         ),
         height=850,
         width=1750,
-        template='plotly_white',
+        template='plotly_dark',        # dark bg makes yellow/purple HA pop
         showlegend=True,
         legend=dict(orientation='v', x=1.02, y=1, font=dict(size=10), tracegroupgap=4),
         hovermode='x unified',
@@ -174,7 +228,7 @@ def create_index(output_folder, plot_files):
 <body>
   <h1>USD/INR — Yearly Plots 2004–2005</h1>
   <p>
-    Panel 1: OHLC + Moving Averages + Kalman Filter overlay &nbsp;|&nbsp;
+    Panel 1: OHLC + HA Candles + Close Line + Moving Averages + Kalman overlay &nbsp;|&nbsp;
     Panel 2: Kalman Gain
   </p>
   <ul>{links}</ul>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Feature Importance</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#0d1117; color:#c9d1d9;
+          font-family:'Courier New',monospace; padding:30px; }
+  h1 { text-align:center; color:#58a6ff; margin-bottom:6px; }
+  p  { text-align:center; color:#8b949e; font-size:0.82em; margin-bottom:20px; }
+  .cw { background:#161b22; border:1px solid #30363d; border-radius:8px;
+         padding:20px; max-width:880px; margin:0 auto; }
+  canvas { max-height:460px; }
+  .back { text-align:center; margin-top:18px; }
+  .back a { color:#58a6ff; text-decoration:none; }
+  .back a:hover { color:#ff8c00; }
+</style>
+</head>
+<body>
+<h1>Feature Importance &mdash; Permutation (2020&ndash;2021 validation)</h1>
+<p>Mean MAE increase when each feature is randomly shuffled.
+   Higher = more important. Evaluated on out-of-sample 2020&ndash;2021 data.</p>
+<div class="cw"><canvas id="fi"></canvas></div>
+<div class="back"><a href="index.html">&larr; Back to Index</a></div>
+<script>
+new Chart(document.getElementById('fi'), {
+  type: 'bar',
+  data: {
+    labels:   ["close_lag1", "close_lag3", "close_lag2", "rsi14", "std5", "feat", "garch_vol", "atr14", "ret_lag3", "regime_enc", "dow", "ret_lag1", "ret_lag2", "std25", "std14"],
+    datasets: [{
+      label: 'Permutation Importance (MAE delta)',
+      data:  [0.133976, 0.051504, 0.035997, 0.018321, 0.01712, 0.012034, 0.001151, -0.000305, -0.001178, -0.001422, -0.001499, -0.001673, -0.008699, -0.016614, -0.019189],
+      backgroundColor: ["#ff8c00", "#ff8c00", "#ff8c00", "#ff8c00", "#ff8c00", "#ff8c00", "#ff8c00", "#ef5350", "#ef5350", "#ef5350", "#ef5350", "#ef5350", "#ef5350", "#ef5350", "#ef5350"],
+      borderWidth: 0,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    animation:  false,
+    plugins: {
+      legend: { display: false },
+      title:  { display: true,
+                 text: 'Permutation Feature Importance (2020-2021 OOS)',
+                 color: '#58a6ff', font: { size: 14 } }
+    },
+    scales: {
+      x: { ticks: { color:'#8b949e' },
+             grid:  { color:'rgba(255,255,255,0.06)' },
+             title: { display:true, text:'Mean MAE increase', color:'#8b949e' } },
+      y: { ticks: { color:'#c9d1d9',
+                      font:{ family:'Courier New', size:11 } },
+             grid:  { color:'rgba(255,255,255,0.04)' } }
+    }
+  }
+});
+</script>
+</body>
+</html>

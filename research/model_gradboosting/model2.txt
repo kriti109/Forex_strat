@@ -1,0 +1,51 @@
+learnt on 2003 - 2019, calculated error on 2020 and 2021
+Loading D:\forex_strat_prml\data\raw\USD_INR_Exchange.csv ...
+  4,688 days  |  years: 2003 -> 2021
+
+[1] Fitting GARCH(1,1) on full series ...
+  GARCH(1,1):  omega=2.81e-07  alpha=0.0689  beta=0.9200  persistence=0.9889
+
+[2] Building features on full series ...
+
+[3] Learning direction thresholds on 2003-2019 ...
+  Direction thresholds:  gamma=0.2697  beta=0.3653
+  Regime breakdown (train):
+    high    :   173 days (4.2%)
+    medium  :  1388 days (33.3%)
+    low     :  2604 days (62.5%)
+
+[4] Training GB model & predicting 2020-2021 ...
+  Training on 4,140 rows  (2004-01-02 -> 2019-12-30)
+  2020: 262 days predicted  |  MAE = 1.3404 INR
+  2021: 261 days predicted  |  MAE = 0.8332 INR
+
+[5] Computing results ...
+
+===============================================================================================
+  Period      Days       MAE      RMSE    Avg%    Med%   65pct%   90pct%     Max%
+-----------------------------------------------------------------------------------------------
+  2020         262    1.3404    1.7170  1.7792  1.3195   2.4240   3.7284   5.5291
+  2021         260    0.8332    1.0000  1.1196  1.0368   1.3884   2.1042   3.3526
+  Combined     522    1.0878    1.4063  1.4506  1.1333   1.6017   3.1777   5.5291
+===============================================================================================
+
+
+[6] Computing permutation feature importance ...
+
+  Permutation Feature Importance (2020-2021 validation):
+    close_lag1       +0.133976  (+/- 0.006393)  ++++++++++++++++++++++++++++++++++++++++
+    close_lag3       +0.051504  (+/- 0.003935)  +++++++++++++++
+    close_lag2       +0.035997  (+/- 0.003187)  ++++++++++
+    rsi14            +0.018321  (+/- 0.003821)  +++++
+    std5             +0.017120  (+/- 0.003779)  +++++
+    feat             +0.012034  (+/- 0.003527)  +++
+    garch_vol        +0.001151  (+/- 0.001932)  +
+    atr14            -0.000305  (+/- 0.002149)  +
+    ret_lag3         -0.001178  (+/- 0.001969)  +
+    regime_enc       -0.001422  (+/- 0.000744)  +
+    dow              -0.001499  (+/- 0.002842)  +
+    ret_lag1         -0.001673  (+/- 0.002313)  +
+    ret_lag2         -0.008699  (+/- 0.002244)  ++
+    std25            -0.016614  (+/- 0.001871)  ++++
+    std14            -0.019189  (+/- 0.001781)  +++++
+  Saved: D:\forex_strat_prml\research\model2_gradboosting\feature_importance.html

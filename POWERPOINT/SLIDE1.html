@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<title>USD/INR Quant Strategy - Problem Statement</title>
+<style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #0B132B;
+            font-family: 'Inter', sans-serif;
+            color: #E2E8F0;
+        }
+        p, h1, h2, h3, ul, li {
+            margin: 0;
+            padding: 0;
+        }
+        .highlight-green { color: #00A86B; font-weight: 600; }
+        .highlight-blue { color: #47B8E0; font-weight: 600; }
+        .mono-text { font-family: 'JetBrains Mono', monospace; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div class="slide-container" style="position: relative; width: 1280px; height: 720px; overflow: hidden; background-color: #0B132B;">
+<div data-object="true" data-object-type="shape" style="position: absolute; top: 0; left: 0; width: 1280px; height: 6px; background-color: #00A86B; z-index: 1;"></div>
+<div data-object="true" data-object-type="textbox" style="position: absolute; top: 40px; left: 60px; width: 1160px; height: 90px; z-index: 10;">
+<p style="font-size: 16px; color: #47B8E0; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Problem Statement (1/2)</p>
+<p style="font-size: 30px; font-weight: 700; color: #FFFFFF; line-height: 1.15;">Predicting USD/INR Closing Price for a Quant Strategy</p>
+</div>
+<div data-object="true" data-object-type="textbox" style="position: absolute; top: 140px; left: 60px; width: 740px; height: 145px; z-index: 10;">
+<div style="border-left: 4px solid #47B8E0; padding-left: 16px;">
+<p style="font-size: 20px; font-weight: 600; color: #FFFFFF; margin-bottom: 12px;"><i class="fa-solid fa-bullseye" style="color: #47B8E0; margin-right: 8px;"></i>Objective &amp; Importance</p>
+<p style="font-size: 15px; line-height: 1.45; color: #CBD5E1; margin-bottom: 8px;">Predict the next-day (<span class="mono-text">T+1</span>) USD/INR daily closing price and convert forecasts into reliable long/short signals for a systematic trading strategy.</p>
+<p style="font-size: 15px; line-height: 1.45; color: #CBD5E1;">Even a small directional edge improves PnL after costs in this high-liquidity FX pair. Accurate forecasts are critical for hedging (importers/exporters) and risk budgeting.</p>
+</div>
+</div>
+<div data-object="true" data-object-type="textbox" style="position: absolute; top: 310px; left: 60px; width: 740px; height: 155px; z-index: 10;">
+<div style="border-left: 4px solid #F59E0B; padding-left: 16px;">
+<p style="font-size: 20px; font-weight: 600; color: #FFFFFF; margin-bottom: 12px;"><i class="fa-solid fa-chart-line" style="color: #F59E0B; margin-right: 8px;"></i>Market Context &amp; Dynamics</p>
+<ul style="list-style-type: none; margin-left: 0;">
+<li style="font-size: 15px; line-height: 1.45; color: #CBD5E1; margin-bottom: 8px; position: relative; padding-left: 20px;"><span style="position: absolute; left: 0; color: #F59E0B;">▪</span><span class="highlight-blue">Regime Shifts:</span> Driven by RBI policy interventions, crude oil shocks, and global USD cycles (DXY).</li>
+<li style="font-size: 15px; line-height: 1.45; color: #CBD5E1; margin-bottom: 8px; position: relative; padding-left: 20px;"><span style="position: absolute; left: 0; color: #F59E0B;">▪</span><span class="highlight-blue">Autocorrelation:</span> USD/INR exhibits autocorrelation mostly in returns rather than absolute levels.</li>
+<li style="font-size: 15px; line-height: 1.45; color: #CBD5E1; position: relative; padding-left: 20px;"><span style="position: absolute; left: 0; color: #F59E0B;">▪</span><span class="highlight-blue">Anomalies:</span> Significant calendar/holiday effects require robust preprocessing.</li>
+</ul>
+</div>
+</div>
+<div data-object="true" data-object-type="textbox" style="position: absolute; top: 490px; left: 60px; width: 740px; height: 180px; z-index: 10;">
+<div style="border-left: 4px solid #EF4444; padding-left: 16px;">
+<p style="font-size: 20px; font-weight: 600; color: #FFFFFF; margin-bottom: 12px;"><i class="fa-solid fa-triangle-exclamation" style="color: #EF4444; margin-right: 8px;"></i>Technical Challenges &amp; Constraints</p>
+<ul style="list-style-type: none; margin-left: 0;">
+<li style="font-size: 15px; line-height: 1.45; color: #CBD5E1; margin-bottom: 8px; position: relative; padding-left: 20px;"><span style="position: absolute; left: 0; color: #EF4444;">▪</span><span style="font-weight: 600; color: #F1F5F9;">Modeling:</span> Non-stationarity, structural breaks, overlapping macro drivers, and noisy signals necessitate strict validation to prevent look-ahead bias.</li>
+<li style="font-size: 15px; line-height: 1.45; color: #CBD5E1; margin-bottom: 8px; position: relative; padding-left: 20px;"><span style="position: absolute; left: 0; color: #EF4444;">▪</span><span style="font-weight: 600; color: #F1F5F9;">Execution:</span> Transaction costs, slippage, and position limits must be modeled.</li>
+<li style="font-size: 15px; line-height: 1.45; color: #CBD5E1; position: relative; padding-left: 20px;"><span style="position: absolute; left: 0; color: #EF4444;">▪</span><span style="font-weight: 600; color: #F1F5F9;">Market Structure:</span> Discrepancy between Indian exchange-trading hours and global FX 24x5 markets creates gap risks.</li>
+</ul>
+</div>
+</div>
+<div data-object="true" data-object-type="shape" style="position: absolute; top: 140px; left: 840px; width: 380px; height: 530px; background-color: #111827; border: 1px solid #1E293B; border-radius: 8px; z-index: 1;"></div>
+<div data-object="true" data-object-type="shape" style="position: absolute; top: 140px; left: 840px; width: 380px; height: 4px; background-color: #00A86B; border-top-left-radius: 8px; border-top-right-radius: 8px; z-index: 2;"></div>
+<div data-object="true" data-object-type="textbox" style="position: absolute; top: 165px; left: 865px; width: 330px; height: 35px; z-index: 10;">
+<p style="font-size: 20px; font-weight: 700; color: #FFFFFF; text-align: center;"><i class="fa-solid fa-square-check" style="color: #00A86B; margin-right: 8px;"></i>Success Criteria</p>
+</div>
+<div data-object="true" data-object-type="textbox" style="position: absolute; top: 220px; left: 865px; width: 330px; height: 118px; z-index: 10;">
+<p style="font-size: 14px; font-weight: 600; color: #94A3B8; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px;">Model Metrics</p>
+<div style="background-color: #1E293B; padding: 12px; border-radius: 6px;">
+<p style="font-size: 14px; color: #E2E8F0; margin-bottom: 6px;"><i class="fa-solid fa-arrow-trend-up" style="color: #00A86B; width: 20px;"></i> <span class="highlight-green">Directional Accuracy</span></p>
+<p style="font-size: 14px; color: #E2E8F0; margin-bottom: 6px;"><i class="fa-solid fa-calculator" style="color: #47B8E0; width: 20px;"></i> RMSE / MAE / MAPE</p>
+<p style="font-size: 14px; color: #E2E8F0;"><i class="fa-solid fa-chart-pie" style="color: #F59E0B; width: 20px;"></i> AUC on Up/Down signals</p>
+</div>
+</div>
+<div data-object="true" data-object-type="textbox" style="position: absolute; top: 360px; left: 865px; width: 330px; height: 137px; z-index: 10;">
+<p style="font-size: 14px; font-weight: 600; color: #94A3B8; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px;">Strategy Metrics</p>
+<div style="background-color: #1E293B; padding: 12px; border-radius: 6px;">
+<p style="font-size: 14px; color: #E2E8F0; margin-bottom: 6px;"><i class="fa-solid fa-coins" style="color: #00A86B; width: 20px;"></i> <span class="highlight-green">Net PnL &amp; CAGR</span></p>
+<p style="font-size: 14px; color: #E2E8F0; margin-bottom: 6px;"><i class="fa-solid fa-scale-balanced" style="color: #47B8E0; width: 20px;"></i> Sharpe &amp; Sortino Ratios</p>
+<p style="font-size: 14px; color: #E2E8F0; margin-bottom: 6px;"><i class="fa-solid fa-arrow-down-long" style="color: #EF4444; width: 20px;"></i> Maximum Drawdown</p>
+<p style="font-size: 14px; color: #E2E8F0;"><i class="fa-solid fa-percentage" style="color: #F59E0B; width: 20px;"></i> Hit Ratio (Win Rate)</p>
+</div>
+</div>
+<div data-object="true" data-object-type="textbox" style="position: absolute; top: 520px; left: 865px; width: 330px; height: 126px; z-index: 10;">
+<p style="font-size: 14px; font-weight: 600; color: #94A3B8; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px;">Project Deliverables</p>
+<ul style="list-style-type: none; margin-left: 0; background-color: rgba(71, 184, 224, 0.1); border: 1px solid rgba(71, 184, 224, 0.3); padding: 12px; border-radius: 6px;">
+<li style="font-size: 13px; color: #CBD5E1; margin-bottom: 6px;">1. Reproducible ML Pipeline</li>
+<li style="font-size: 13px; color: #CBD5E1; margin-bottom: 6px;">2. Walk-forward Backtest</li>
+<li style="font-size: 13px; color: #CBD5E1; margin-bottom: 6px;">3. Error &amp; Regime Analysis</li>
+<li style="font-size: 13px; color: #CBD5E1;">4. Comprehensive Risk Report</li>
+</ul>
+</div>
+</div>
+</body>
+</html>

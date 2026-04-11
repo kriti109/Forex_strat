@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>USD/INR Poly Regression -- Train (2003-2020)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@700;800&display=swap');
+  * { box-sizing: border-box; }
+  body { background: #080c10; color: #c9d1d9;
+          font-family: 'JetBrains Mono', monospace;
+          max-width: 1300px; margin: 40px auto; padding: 0 24px; }
+  h1 { text-align: center; color: #e2b714;
+        font-family: 'Syne', sans-serif; font-size: 2em;
+        letter-spacing: -0.02em; margin-bottom: 4px; }
+  h2 { color: #e2b714; font-family: 'Syne', sans-serif;
+        border-bottom: 1px solid #1e2732;
+        padding-bottom: 6px; margin: 28px 0 12px; font-size: 1.1em; }
+  p  { text-align: center; color: #4a5568; margin: 6px 0; font-size: 0.78em;
+        text-transform: uppercase; letter-spacing: 0.08em; }
+  .stats { display: flex; gap: 16px; justify-content: center;
+            margin: 20px 0; flex-wrap: wrap; }
+  .sb { background: #0d1117; border: 1px solid #1e2732;
+         border-radius: 4px; padding: 14px 22px; text-align: center;
+         position: relative; overflow: hidden; }
+  .sb::before { content: ''; position: absolute; top: 0; left: 0;
+                 width: 100%; height: 2px; background: #e2b714; }
+  .sb.acc::before { background: #50c864; }
+  .sv { font-size: 1.9em; color: #e2b714; font-weight: 700; }
+  .sb.acc .sv { color: #50c864; }
+  .sl { font-size: 0.7em; color: #4a5568; margin-top: 4px;
+         text-transform: uppercase; letter-spacing: 0.1em; }
+  table { border-collapse: collapse; width: 100%;
+            font-size: 0.78em; margin: 10px 0; }
+  th { background: #0d1117; color: #e2b714; padding: 10px 14px; text-align: right;
+        border: 1px solid #1e2732; white-space: nowrap;
+        font-family: 'Syne', sans-serif; }
+  td { padding: 8px 14px; text-align: right; border: 1px solid #1a2030; }
+  tr:nth-child(even) { background: #0d1117; }
+  tr:hover { background: #111820; }
+  ul { list-style: none; padding: 0; columns: 3; gap: 10px; }
+  ul.feat { columns: 2; }
+  li { margin: 8px 0; }
+  a  { color: #e2b714; text-decoration: none; }
+  a:hover { color: #26a69a; }
+  code { background: #0d1117; padding: 2px 6px;
+           border-radius: 3px; color: #79c0ff; }
+</style>
+</head>
+<body>
+<h1>USD/INR Poly Regression -- Train (2003-2020)</h1>
+<p>Degree-2 polynomial · Ridge CV · 10 features (DT-matched) · fixed model</p>
+<p style="text-align:center;margin:10px 0"><a href="validation_index.html" style="color:#e2b714">-&gt; Go to Walk-Forward Results (2021-2023)</a></p>
+<div class="stats">
+  <div class="sb"><div class="sv">0.3337%</div>
+    <div class="sl">Avg Abs Error</div></div>
+  <div class="sb"><div class="sv">0.2302%</div>
+    <div class="sl">Median Error</div></div>
+  <div class="sb"><div class="sv">0.3449%</div>
+    <div class="sl">65th Pct Error</div></div>
+  <div class="sb"><div class="sv">0.7451%</div>
+    <div class="sl">90th Pct Error</div></div>
+  <div class="sb acc"><div class="sv">53.63%</div>
+    <div class="sl">Direction Accuracy</div></div>
+  <div class="sb"><div class="sv">4,402</div>
+    <div class="sl">Trading Days</div></div>
+</div>
+<h2>Model Info</h2><ul class="feat"><li><code>Degree</code> : <span style="color:#e2b714">2</span></li><li><code>Raw features</code> : <span style="color:#e2b714">10</span></li><li><code>Poly features</code> : <span style="color:#e2b714">65</span></li><li><code>Ridge alpha (CV)</code> : <span style="color:#e2b714">5000.0</span></li><li><code>Train rows</code> : <span style="color:#e2b714">4403</span></li><li><code>Walk-forward refit</code> : <span style="color:#e2b714">every 7 trading days (1000-day window)</span></li></ul>
+<h2>Features (10 -- identical to Decision Tree model)</h2>
+<ul class="feat"><li><code>feat</code></li><li><code>feat_change</code></li><li><code>price_vs_ema20</code></li><li><code>ret_1d</code></li><li><code>ret_3d</code></li><li><code>vol_ratio</code></li><li><code>intraday_body</code></li><li><code>wick_upper</code></li><li><code>close_in_range</code></li><li><code>prev_direction</code></li></ul>
+<h2>Yearly Summary</h2>
+<table><thead><tr><th>Year</th><th>Days</th><th>High Vol</th><th>Low Vol</th><th>Medium Vol</th><th>Dir Acc (%)</th><th>Avg Error (INR)</th><th>Avg Error (%)</th><th>65th Pct Err (%)</th><th>Max Error (%)</th></tr></thead><tbody><tr><td>2004.0</td><td>259.0</td><td>13.0</td><td>157.0</td><td>89.0</td><td>51.74</td><td>0.0928</td><td>0.2066</td><td>0.2042</td><td>1.2591</td></tr>
+<tr><td>2005.0</td><td>259.0</td><td>19.0</td><td>161.0</td><td>79.0</td><td>54.83</td><td>0.0709</td><td>0.1604</td><td>0.1551</td><td>1.0876</td></tr>
+<tr><td>2006.0</td><td>260.0</td><td>16.0</td><td>159.0</td><td>85.0</td><td>51.54</td><td>0.1</td><td>0.2215</td><td>0.2416</td><td>1.4326</td></tr>
+<tr><td>2007.0</td><td>258.0</td><td>15.0</td><td>141.0</td><td>102.0</td><td>56.59</td><td>0.1236</td><td>0.3002</td><td>0.335</td><td>1.4784</td></tr>
+<tr><td>2008.0</td><td>242.0</td><td>13.0</td><td>139.0</td><td>90.0</td><td>54.96</td><td>0.2211</td><td>0.49</td><td>0.5168</td><td>3.1343</td></tr>
+<tr><td>2009.0</td><td>260.0</td><td>6.0</td><td>169.0</td><td>85.0</td><td>54.62</td><td>0.2125</td><td>0.4384</td><td>0.4765</td><td>3.9109</td></tr>
+<tr><td>2010.0</td><td>261.0</td><td>11.0</td><td>175.0</td><td>75.0</td><td>49.04</td><td>0.1711</td><td>0.3744</td><td>0.4085</td><td>2.4266</td></tr>
+<tr><td>2011.0</td><td>259.0</td><td>12.0</td><td>153.0</td><td>94.0</td><td>49.81</td><td>0.1666</td><td>0.3505</td><td>0.3669</td><td>2.539</td></tr>
+<tr><td>2012.0</td><td>261.0</td><td>10.0</td><td>177.0</td><td>74.0</td><td>54.41</td><td>0.2662</td><td>0.4992</td><td>0.4675</td><td>5.0228</td></tr>
+<tr><td>2013.0</td><td>260.0</td><td>5.0</td><td>175.0</td><td>80.0</td><td>54.23</td><td>0.3041</td><td>0.5055</td><td>0.5795</td><td>3.9095</td></tr>
+<tr><td>2014.0</td><td>261.0</td><td>8.0</td><td>169.0</td><td>84.0</td><td>57.09</td><td>0.1926</td><td>0.3156</td><td>0.3488</td><td>1.5552</td></tr>
+<tr><td>2015.0</td><td>261.0</td><td>8.0</td><td>160.0</td><td>93.0</td><td>53.26</td><td>0.1726</td><td>0.2689</td><td>0.3253</td><td>1.1716</td></tr>
+<tr><td>2016.0</td><td>261.0</td><td>10.0</td><td>177.0</td><td>74.0</td><td>49.81</td><td>0.1582</td><td>0.2353</td><td>0.2909</td><td>1.0517</td></tr>
+<tr><td>2017.0</td><td>258.0</td><td>12.0</td><td>156.0</td><td>90.0</td><td>49.61</td><td>0.1335</td><td>0.2048</td><td>0.2237</td><td>1.0107</td></tr>
+<tr><td>2018.0</td><td>261.0</td><td>7.0</td><td>169.0</td><td>85.0</td><td>57.09</td><td>0.2652</td><td>0.3813</td><td>0.4334</td><td>1.9652</td></tr>
+<tr><td>2019.0</td><td>260.0</td><td>8.0</td><td>167.0</td><td>85.0</td><td>56.92</td><td>0.2486</td><td>0.3522</td><td>0.4151</td><td>2.6246</td></tr>
+<tr><td>2020.0</td><td>261.0</td><td>17.0</td><td>150.0</td><td>94.0</td><td>56.32</td><td>0.2812</td><td>0.3766</td><td>0.3847</td><td>2.7757</td></tr>
+</tbody></table>
+<h2>Per-Year Interactive Plots</h2>
+<ul><li><a href="plot_01_2003.html" target="_blank">plot_01_2003.html</a></li>
+<li><a href="plot_02_2004.html" target="_blank">plot_02_2004.html</a></li>
+<li><a href="plot_03_2005.html" target="_blank">plot_03_2005.html</a></li>
+<li><a href="plot_04_2006.html" target="_blank">plot_04_2006.html</a></li>
+<li><a href="plot_05_2007.html" target="_blank">plot_05_2007.html</a></li>
+<li><a href="plot_06_2008.html" target="_blank">plot_06_2008.html</a></li>
+<li><a href="plot_07_2009.html" target="_blank">plot_07_2009.html</a></li>
+<li><a href="plot_08_2010.html" target="_blank">plot_08_2010.html</a></li>
+<li><a href="plot_09_2011.html" target="_blank">plot_09_2011.html</a></li>
+<li><a href="plot_10_2012.html" target="_blank">plot_10_2012.html</a></li>
+<li><a href="plot_11_2013.html" target="_blank">plot_11_2013.html</a></li>
+<li><a href="plot_12_2014.html" target="_blank">plot_12_2014.html</a></li>
+<li><a href="plot_13_2015.html" target="_blank">plot_13_2015.html</a></li>
+<li><a href="plot_14_2016.html" target="_blank">plot_14_2016.html</a></li>
+<li><a href="plot_15_2017.html" target="_blank">plot_15_2017.html</a></li>
+<li><a href="plot_16_2018.html" target="_blank">plot_16_2018.html</a></li>
+<li><a href="plot_17_2019.html" target="_blank">plot_17_2019.html</a></li>
+<li><a href="plot_18_2020.html" target="_blank">plot_18_2020.html</a></li></ul>
+</body>
+</html>

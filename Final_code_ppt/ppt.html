@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<title>USD/INR Quant Strategy Presentation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #060d1f;
+    font-family: 'Inter', sans-serif;
+    color: #E2E8F0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+    padding: 40px 20px;
+  }
+  .slide-wrapper {
+    width: 1280px;
+    position: relative;
+  }
+  .slide-label {
+    font-size: 12px;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .slide {
+    position: relative;
+    width: 1280px;
+    height: 720px;
+    overflow: hidden;
+    background-color: #0B132B;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.6);
+  }
+
+  /* ── shared helpers ── */
+  .top-bar { position: absolute; top: 0; left: 0; width: 100%; height: 6px; background: #00A86B; z-index: 5; }
+  .slide-tag { font-size: 13px; color: #47B8E0; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; font-family: 'JetBrains Mono', monospace; }
+  .slide-title { font-size: 30px; font-weight: 700; color: #fff; line-height: 1.15; }
+  .section-head { font-size: 20px; font-weight: 600; color: #fff; margin-bottom: 10px; }
+  .body-text { font-size: 14.5px; line-height: 1.5; color: #CBD5E1; }
+  .hl-blue { color: #47B8E0; font-weight: 600; }
+  .hl-green { color: #00A86B; font-weight: 600; }
+  .hl-amber { color: #F59E0B; font-weight: 600; }
+  .hl-red { color: #EF4444; font-weight: 600; }
+  .hl-white { color: #F1F5F9; font-weight: 600; }
+  .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.88em; }
+
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(71,184,224,0.12);
+    border: 1px solid rgba(71,184,224,0.35);
+    color: #47B8E0;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  .side-panel {
+    position: absolute;
+    top: 140px; left: 840px;
+    width: 390px; height: 540px;
+    background: #111827;
+    border: 1px solid #1E293B;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .side-panel-bar { height: 4px; background: #00A86B; }
+  .side-panel-inner { padding: 20px 22px; }
+  .panel-section-title {
+    font-size: 11px; font-weight: 600; color: #94A3B8;
+    text-transform: uppercase; letter-spacing: 1.2px;
+    margin-bottom: 8px;
+  }
+  .panel-card {
+    background: #1E293B;
+    padding: 12px 14px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+  }
+  .panel-card p { font-size: 13.5px; color: #E2E8F0; margin-bottom: 5px; line-height: 1.4; }
+  .panel-card p:last-child { margin-bottom: 0; }
+  .panel-card-blue {
+    background: rgba(71,184,224,0.07);
+    border: 1px solid rgba(71,184,224,0.25);
+    padding: 12px 14px;
+    border-radius: 6px;
+  }
+  .panel-card-blue li { font-size: 13px; color: #CBD5E1; margin-bottom: 5px; list-style: none; }
+
+  .left-block {
+    position: absolute; left: 60px;
+    width: 750px;
+  }
+  .border-section {
+    padding-left: 16px;
+  }
+  .border-blue { border-left: 4px solid #47B8E0; }
+  .border-amber { border-left: 4px solid #F59E0B; }
+  .border-red  { border-left: 4px solid #EF4444; }
+  .border-green{ border-left: 4px solid #00A86B; }
+
+  ul.bullet { list-style: none; margin: 0; padding: 0; }
+  ul.bullet li {
+    font-size: 14.5px; line-height: 1.5; color: #CBD5E1;
+    margin-bottom: 7px; padding-left: 18px; position: relative;
+  }
+  ul.bullet li span.dot {
+    position: absolute; left: 0;
+  }
+
+  .challenge-card {
+    background: #111827;
+    border: 1px solid #1E293B;
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .challenge-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px; height: 100%;
+  }
+  .cc-blue::before  { background: #47B8E0; }
+  .cc-amber::before { background: #F59E0B; }
+  .cc-red::before   { background: #EF4444; }
+  .cc-green::before { background: #00A86B; }
+
+  .challenge-card .card-title {
+    font-size: 16px; font-weight: 600; color: #fff;
+    margin-bottom: 6px;
+  }
+  .formula-box {
+    background: #0B132B;
+    border: 1px solid #1E293B;
+    border-radius: 6px;
+    padding: 8px 14px;
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    color: #E2E8F0;
+    margin-bottom: 8px;
+  }
+
+  .nav-dots {
+    position: absolute; bottom: 18px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; gap: 6px; z-index: 10;
+  }
+  .dot-item {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #1E3A5F;
+  }
+  .dot-item.active { background: #00A86B; width: 20px; border-radius: 3px; }
+
+  .slide-num {
+    position: absolute; bottom: 18px; right: 30px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: #334155; z-index: 10;
+  }
+
+  .bottom-bar {
+    position: absolute; bottom: 0; left: 0;
+    width: 100%; height: 3px;
+    background: linear-gradient(90deg, #00A86B 0%, #47B8E0 50%, transparent 100%);
+    opacity: 0.4;
+  }
+
+  .s-tag { font-size: 11px; color: #47B8E0; text-transform: uppercase; letter-spacing: 2px; font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+  .s-title { font-size: 26px; font-weight: 700; color: #F1F5F9; line-height: 1.2; }
+
+  .acard {
+    background: #111827;
+    border: 1px solid #1E293B;
+    border-radius: 6px;
+    position: absolute;
+    overflow: hidden;
+  }
+  .acard-bar { height: 100%; width: 5px; position: absolute; top:0; left:0; border-radius: 6px 0 0 6px; }
+  .acard-inner { position: absolute; top:0; left: 14px; right: 10px; bottom: 0; padding: 10px 0; }
+
+  .fpill {
+    background: #0B132B;
+    border: 1px solid #1E293B;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #E2E8F0;
+    display: inline-block;
+  }
+
+  .icard {
+    background: #111827;
+    border: 1px solid #1E293B;
+    border-radius: 6px;
+    position: absolute;
+    padding: 12px 16px;
+    overflow: hidden;
+  }
+  .icard-top { height: 4px; width: 100%; position: absolute; top:0; left:0; border-radius: 6px 6px 0 0; }
+
+  ul.tbullet { list-style: none; margin: 0; padding: 0; }
+  ul.tbullet li { font-size: 12.5px; color: #CBD5E1; margin-bottom: 5px; padding-left: 14px; position: relative; line-height: 1.4; }
+  ul.tbullet li::before { content: '▪'; position: absolute; left: 0; color: #47B8E0; font-size: 10px; top: 2px; }
+  ul.tbullet li.green::before { color: #00A86B; }
+  ul.tbullet li.amber::before { color: #F59E0B; }
+  ul.tbullet li.red::before   { color: #EF4444; }
+
+  .slabel { font-size: 10px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+
+  .chip {
+    display: inline-block;
+    font-size: 11px; font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .chip-red   { background: rgba(239,68,68,0.15);  color: #EF4444; border: 1px solid rgba(239,68,68,0.3); }
+  .chip-green { background: rgba(0,168,107,0.15);  color: #00A86B; border: 1px solid rgba(0,168,107,0.3); }
+  .chip-amber { background: rgba(245,158,11,0.15); color: #F59E0B; border: 1px solid rgba(245,158,11,0.3); }
+
+  .ctable { width: 100%; border-collapse: collapse; }
+  .ctable th { font-size: 11px; color: #94A3B8; text-align: left; padding: 5px 10px; background: #1E293B; font-weight: 600; }
+  .ctable td { font-size: 11.5px; color: #CBD5E1; padding: 5px 10px; border-bottom: 1px solid #1E293B; }
+  .ctable tr:last-child td { border-bottom: none; }
+  .ctable tr.stat-row td { background: rgba(11,19,43,0.6); }
+  .ctable tr.dt-row td   { background: rgba(0,40,20,0.4); }
+  .ctable tr.knn-row td  { background: rgba(0,30,50,0.4); }
+  .ctable tr.lda-row td  { background: rgba(40,30,0,0.4); }
+
+  /* slide 9 specific */
+  .lda-stage-card {
+    background: #111827;
+    border: 1px solid #1E293B;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .lda-stage-bar { height: 5px; }
+  .lda-stage-inner { padding: 14px 18px; }
+  .feature-pill {
+    display: inline-block;
+    font-size: 10.5px;
+    font-family: 'JetBrains Mono', monospace;
+    background: #0B132B;
+    border: 1px solid #1E293B;
+    color: #E2E8F0;
+    padding: 3px 9px;
+    border-radius: 4px;
+    margin: 2px 3px 2px 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     SLIDE 1 — Problem Statement (1/2)
+══════════════════════════════════════ -->
+<div class="slide-wrapper">
+  <div class="slide-label">Slide 01 / 14</div>
+  <div class="slide">
+    <div class="top-bar"></div>
+    <div class="bottom-bar"></div>
+    <div style="position:absolute; top:28px; left:60px; width:1160px; z-index:10;">
+      <p class="slide-tag">Problem Statement (1/2)</p>
+      <p class="slide-title">Predicting USD/INR Closing Price for a Quant Strategy</p>
+    </div>
+    <div class="left-block" style="top:128px;">
+      <div class="border-section border-blue">
+        <p class="section-head"><i class="fa-solid fa-bullseye" style="color:#47B8E0;margin-right:8px;"></i>Objective &amp; Importance</p>
+        <p class="body-text" style="margin-bottom:8px;">
+          Predict the next-day <span class="mono">(T+1)</span> USD/INR daily closing price and convert forecasts into reliable <span class="hl-green">long/short signals</span> for a systematic trading strategy.
+        </p>
+        <p class="body-text">
+          Even a small directional edge improves PnL after costs in this high-liquidity FX pair. Accurate forecasts are critical for <span class="hl-blue">hedging</span> (importers/exporters) and <span class="hl-blue">risk budgeting</span>.
+        </p>
+      </div>
+    </div>
+    <div class="left-block" style="top:285px;">
+      <div class="border-section border-amber">
+        <p class="section-head"><i class="fa-solid fa-chart-line" style="color:#F59E0B;margin-right:8px;"></i>Market Context &amp; Dynamics</p>
+        <ul class="bullet">
+          <li><span class="dot" style="color:#F59E0B;">▪</span><span class="hl-blue">Regime Shifts:</span> Driven by RBI policy interventions, crude oil shocks, and global USD cycles (DXY).</li>
+          <li><span class="dot" style="color:#F59E0B;">▪</span><span class="hl-blue">Autocorrelation:</span> USD/INR exhibits autocorrelation mostly in returns rather than absolute levels.</li>
+          <li><span class="dot" style="color:#F59E0B;">▪</span><span class="hl-blue">Anomalies:</span> Significant calendar/holiday effects require robust preprocessing.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="left-block" style="top:460px;">
+      <div class="border-section border-red">
+        <p class="section-head"><i class="fa-solid fa-triangle-exclamation" style="color:#EF4444;margin-right:8px;"></i>Technical Challenges &amp; Constraints</p>
+        <ul class="bullet">
+          <li><span class="dot" style="color:#EF4444;">▪</span><span class="hl-white">Modeling:</span> Non-stationarity, structural breaks, and noisy signals necessitate strict validation to prevent look-ahead bias.</li>
+          <li><span class="dot" style="color:#EF4444;">▪</span><span class="hl-white">Execution:</span> Transaction costs, slippage, and position limits must be modeled.</li>
+          <li><span class="dot" style="color:#EF4444;">▪</span><span class="hl-white">Market Structure:</span> Discrepancy between Indian exchange hours and global FX 24×5 markets creates gap risks.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="side-panel">
+      <div class="side-panel-bar"></div>
+      <div class="side-panel-inner">
+        <p style="font-size:18px;font-weight:700;color:#fff;margin-bottom:18px;text-align:center;">
+          <i class="fa-solid fa-square-check" style="color:#00A86B;margin-right:8px;"></i>Success Criteria
+        </p>
+        <p class="panel-section-title">Model Metrics</p>
+        <div class="panel-card" style="margin-bottom:16px;">
+          <p><i class="fa-solid fa-arrow-trend-up" style="color:#00A86B;width:20px;"></i> <span class="hl-green">Directional Accuracy</span></p>
+          <p><i class="fa-solid fa-calculator" style="color:#47B8E0;width:20px;"></i> RMSE / MAE / MAPE</p>
+          <p><i class="fa-solid fa-chart-pie" style="color:#F59E0B;width:20px;"></i> AUC on Up/Down signals</p>
+        </div>
+        <p class="panel-section-title">Strategy Metrics</p>
+        <div class="panel-card" style="margin-bottom:16px;">
+          <p><i class="fa-solid fa-coins" style="color:#00A86B;width:20px;"></i> <span class="hl-green">Net PnL &amp; CAGR</span></p>
+          <p><i class="fa-solid fa-scale-balanced" style="color:#47B8E0;width:20px;"></i> Sharpe &amp; Sortino Ratios</p>
+          <p><i class="fa-solid fa-arrow-down-long" style="color:#EF4444;width:20px;"></i> Maximum Drawdown</p>
+          <p><i class="fa-solid fa-percentage" style="color:#F59E0B;width:20px;"></i> Hit Ratio (Win Rate)</p>
+        </div>
+        <p class="panel-section-title">Project Deliverables</p>
+        <div class="panel-card-blue">
+          <li>1. Reproducible ML Pipeline</li>
+          <li>2. Walk-forward Backtest</li>
+          <li>3. Error &amp; Regime Analysis</li>
+          <li>4. Comprehensive Risk Report</li>
+        </div>
+      </div>
+    </div>
+    <div class="nav-dots">
+      <div class="dot-item active"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div>
+    </div>
+    <div class="slide-num">01 / 09</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SLIDE 2 — Problem Statement (2/2)
+══════════════════════════════════════ -->
+<div class="slide-wrapper">
+  <div class="slide-label">Slide 02 / 14</div>
+  <div class="slide">
+    <div class="top-bar"></div>
+    <div class="bottom-bar"></div>
+    <div style="position:absolute; top:28px; left:60px; width:1160px; z-index:10;">
+      <p class="slide-tag">Problem Statement (2/2)</p>
+      <p class="slide-title">Core Idea, Dataset &amp; Challenges / Nuances</p>
+    </div>
+    <div style="position:absolute; top:128px; left:60px; width:580px; z-index:10;">
+      <div style="background:#111827; border:1px solid #1E293B; border-radius:8px; padding:16px 20px; border-left:4px solid #00A86B;">
+        <p style="font-size:13px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">One-line Problem</p>
+        <p style="font-size:15px;color:#E2E8F0;line-height:1.55;">
+          Predict next-day <span class="mono">(T+1)</span> USD/INR closing price using historical OHLC data <span class="hl-blue">(2003 – 2023)</span> to generate <span class="hl-green">actionable trading signals</span>.
+        </p>
+      </div>
+    </div>
+    <div style="position:absolute; top:245px; left:60px; width:580px; z-index:10;">
+      <div class="border-section border-blue" style="margin-bottom:0;">
+        <p class="section-head" style="font-size:17px;"><i class="fa-solid fa-lightbulb" style="color:#47B8E0;margin-right:8px;"></i>Core Idea</p>
+        <p class="body-text">
+          Financial markets are <span class="hl-white">noisy, nonlinear, and weakly predictable</span>. The goal is not perfect prediction but extracting a <span class="hl-green">small, consistent edge</span> from structured features.
+        </p>
+      </div>
+    </div>
+    <div style="position:absolute; top:370px; left:60px; width:580px; z-index:10;">
+      <div class="border-section border-amber">
+        <p class="section-head" style="font-size:17px;"><i class="fa-solid fa-rocket" style="color:#F59E0B;margin-right:8px;"></i>Why This Matters</p>
+        <ul class="bullet">
+          <li><span class="dot" style="color:#F59E0B;">▪</span>Even <span class="hl-amber">51–55% directional accuracy</span> can generate meaningful alpha</li>
+          <li><span class="dot" style="color:#F59E0B;">▪</span>Useful for <span class="hl-white">trading, hedging, and risk management</span></li>
+          <li><span class="dot" style="color:#F59E0B;">▪</span>USD/INR is <span class="hl-blue">highly liquid</span> → scalable strategies</li>
+          <li><span class="dot" style="color:#F59E0B;">▪</span>Small predictive improvements → <span class="hl-green">large cumulative impact</span></li>
+        </ul>
+      </div>
+    </div>
+    <div style="position:absolute; top:570px; left:60px; width:580px; z-index:10;">
+      <div class="border-section border-green">
+        <p class="section-head" style="font-size:17px;"><i class="fa-solid fa-database" style="color:#00A86B;margin-right:8px;"></i>Dataset</p>
+        <ul class="bullet">
+          <li><span class="dot" style="color:#00A86B;">▪</span>USD/INR Daily OHLC</li>
+          <li><span class="dot" style="color:#00A86B;">▪</span>Period: <span class="hl-white">2003 – 2023</span></li>
+        </ul>
+      </div>
+    </div>
+    <div style="position:absolute; top:128px; left:690px; width:540px; z-index:10;">
+      <p style="font-size:13px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:14px;">Challenges / Nuances</p>
+      <div class="challenge-card cc-blue">
+        <p class="card-title"><span class="hl-blue">1.</span> High Noise, Low Signal</p>
+        <div class="formula-box" style="margin-bottom:8px;">r<sub>t</sub> = μ<sub>t</sub> + σ<sub>t</sub>ε<sub>t</sub></div>
+        <ul class="bullet">
+          <li><span class="dot" style="color:#47B8E0;">▪</span>Most price movement = <span class="hl-white">random noise</span> (ε<sub>t</sub>)</li>
+          <li><span class="dot" style="color:#47B8E0;">▪</span>Predictable component (μ<sub>t</sub>) is <span class="hl-white">very small</span></li>
+        </ul>
+      </div>
+      <div class="challenge-card cc-amber">
+        <p class="card-title"><span class="hl-amber">2.</span> Non-Stationarity</p>
+        <ul class="bullet">
+          <li><span class="dot" style="color:#F59E0B;">▪</span>Statistical properties <span class="hl-white">change over time</span></li>
+          <li><span class="dot" style="color:#F59E0B;">▪</span>Driven by: RBI policy, macro shocks, global USD cycles</li>
+          <li><span class="dot" style="color:#F59E0B;">▪</span>Models trained on past may <span class="hl-white">fail in new regimes</span></li>
+        </ul>
+      </div>
+      <div class="challenge-card cc-red">
+        <p class="card-title"><span class="hl-red">3.</span> Lagging Nature of Indicators</p>
+        <ul class="bullet">
+          <li><span class="dot" style="color:#EF4444;">▪</span>SMA, EMA, RSI = <span class="hl-white">based on past data</span> — do not predict directly</li>
+          <li><span class="dot" style="color:#EF4444;">▪</span>Need transformation into: momentum, changes &amp; interactions</li>
+        </ul>
+      </div>
+    </div>
+    <div class="nav-dots">
+      <div class="dot-item"></div><div class="dot-item active"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div>
+    </div>
+    <div class="slide-num">02 / 09</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SLIDE 3 — Dataset Description
+══════════════════════════════════════ -->
+<div class="slide-wrapper">
+  <div class="slide-label">Slide 03 / 14</div>
+  <div class="slide">
+    <div class="top-bar"></div>
+    <div class="bottom-bar"></div>
+    <div style="position:absolute; top:28px; left:60px; width:1160px; z-index:10;">
+      <p class="slide-tag">Dataset Description</p>
+      <p class="slide-title">USD/INR Daily Time Series Data (2003–2023)</p>
+    </div>
+    <div style="position:absolute; top:128px; left:60px; width:590px; z-index:10;">
+      <div class="border-section border-blue" style="margin-bottom:0;">
+        <p class="section-head" style="font-size:16px;"><i class="fa-solid fa-table-cells" style="color:#47B8E0;margin-right:8px;"></i>1. OHLC Data <span style="font-weight:400;color:#94A3B8;">(core structure)</span></p>
+        <p class="body-text" style="margin-bottom:8px;">Each data point = one trading day with four key price levels:</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          <div style="background:#1E293B;border-radius:6px;padding:8px 12px;border-left:3px solid #47B8E0;"><p style="font-size:13px;color:#E2E8F0;"><span class="hl-blue mono">O</span> Open → price at market open</p></div>
+          <div style="background:#1E293B;border-radius:6px;padding:8px 12px;border-left:3px solid #00A86B;"><p style="font-size:13px;color:#E2E8F0;"><span class="hl-green mono">H</span> High → highest price of day</p></div>
+          <div style="background:#1E293B;border-radius:6px;padding:8px 12px;border-left:3px solid #EF4444;"><p style="font-size:13px;color:#E2E8F0;"><span class="hl-red mono">L</span> Low → lowest price of day</p></div>
+          <div style="background:#1E293B;border-radius:6px;padding:8px 12px;border-left:3px solid #F59E0B;"><p style="font-size:13px;color:#E2E8F0;"><span class="hl-amber mono">C</span> Close → final price of day</p></div>
+        </div>
+        <p style="font-size:13px;color:#94A3B8;margin-top:8px;">👉 These capture <span class="hl-white">intraday price dynamics and volatility</span></p>
+      </div>
+    </div>
+    <div style="position:absolute; top:320px; left:60px; width:590px; z-index:10;">
+      <div class="border-section border-amber">
+        <p class="section-head" style="font-size:16px;"><i class="fa-solid fa-sliders" style="color:#F59E0B;margin-right:8px;"></i>2. Adjusted Close <span style="font-weight:400;color:#94A3B8;">(if included)</span></p>
+        <p class="body-text" style="margin-bottom:7px;">Accounts for structural changes in the price series. Adjusted for dividends &amp; splits (more relevant in equities). For FX (USD/INR): usually <span class="hl-white">same as close</span>, but included for completeness.</p>
+      </div>
+    </div>
+    <div style="position:absolute; top:440px; left:60px; width:590px; z-index:10;">
+      <div class="border-section border-green">
+        <p class="section-head" style="font-size:16px;"><i class="fa-solid fa-bolt" style="color:#00A86B;margin-right:8px;"></i>3. Why OHLC is Powerful</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+          <div style="background:#111827;border-radius:6px;padding:8px 12px;">
+            <p style="font-size:12px;color:#94A3B8;margin-bottom:4px;">Captures</p>
+            <ul class="bullet" style="margin:0;">
+              <li style="font-size:13px;margin-bottom:3px;"><span class="dot" style="color:#00A86B;">▪</span><span class="hl-white">Trend</span> (Close vs Open)</li>
+              <li style="font-size:13px;margin-bottom:3px;"><span class="dot" style="color:#00A86B;">▪</span><span class="hl-white">Volatility</span> (High – Low)</li>
+              <li style="font-size:13px;"><span class="dot" style="color:#00A86B;">▪</span><span class="hl-white">Sentiment</span> (candle structure)</li>
+            </ul>
+          </div>
+          <div style="background:#111827;border-radius:6px;padding:8px 12px;">
+            <p style="font-size:12px;color:#94A3B8;margin-bottom:4px;">Enables construction of</p>
+            <ul class="bullet" style="margin:0;">
+              <li style="font-size:13px;margin-bottom:3px;"><span class="dot" style="color:#47B8E0;">▪</span>Technical indicators</li>
+              <li style="font-size:13px;margin-bottom:3px;"><span class="dot" style="color:#47B8E0;">▪</span>Price structure features</li>
+              <li style="font-size:13px;"><span class="dot" style="color:#47B8E0;">▪</span>Volatility measures</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute; top:600px; left:60px; width:590px; z-index:10;">
+      <div class="border-section border-red">
+        <p class="section-head" style="font-size:16px;"><i class="fa-solid fa-timeline" style="color:#EF4444;margin-right:8px;"></i>4. Time-Series Nature</p>
+        <p class="body-text">Data is <span class="hl-white">sequential &amp; dependent</span> — observations are <span class="hl-red">not i.i.d.</span> Requires <span class="hl-white">chronological splitting</span> and <span class="hl-white">no random shuffling</span>.</p>
+      </div>
+    </div>
+    <div style="position:absolute; top:128px; left:690px; width:550px; height:556px; z-index:10;">
+      <div style="background:#111827;border:1px solid #1E293B;border-radius:8px;overflow:hidden;height:100%;display:flex;flex-direction:column;">
+        <div style="height:4px;background:#00A86B;flex-shrink:0;"></div>
+        <div style="padding:10px 14px 6px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+          <p style="font-size:12px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:1px;">USD/INR — Daily OHLC Candlestick Chart</p>
+          <span style="font-size:11px;font-family:'JetBrains Mono',monospace;color:#47B8E0;background:rgba(71,184,224,0.1);border:1px solid rgba(71,184,224,0.25);padding:2px 8px;border-radius:4px;">LIVE</span>
+        </div>
+        <div style="flex:1;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#0B132B;">
+          <img src="usd_inr.png" style="width:100%;height:100%;object-fit:contain;" alt="USD/INR OHLC Chart"/>
+        </div>
+        <div style="padding:6px 14px 10px;flex-shrink:0;display:flex;gap:16px;">
+          <p style="font-size:12px;color:#64748B;"><i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>Source: TradingView · FX_IDC:USDINR · 1D</p>
+          <p style="font-size:12px;color:#64748B;">Shows: trends · volatility clustering · regime changes</p>
+        </div>
+      </div>
+    </div>
+    <div class="nav-dots">
+      <div class="dot-item"></div><div class="dot-item"></div><div class="dot-item active"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div>
+    </div>
+    <div class="slide-num">03 / 09</div>
+  </div>
+</div>
+<!-- ══════════════════════════════════════
+     SLIDE 4 — EDA & Preprocessing
+══════════════════════════════════════ -->
+<div class="slide-wrapper">
+  <div class="slide-label">Slide 04 / 14</div>
+  <div class="slide">
+    <div class="top-bar"></div>
+    <div class="bottom-bar"></div>
+    <div style="position:absolute;top:22px;left:60px;z-index:10;">
+      <p class="s-tag">Efforts &amp; Methodology (1/4)</p>
+      <p class="s-title" style="margin-top:4px;">EDA &amp; Preprocessing — Feature Overview</p>
+    </div>
+
+    <!-- ── Plot image area ── -->
+    <div style="position:absolute;top:108px;left:60px;width:1160px;height:470px;background:#111827;border:1px solid #1E293B;border-radius:8px;overflow:hidden;z-index:10;">
+      <div style="height:5px;background:#F59E0B;"></div>
+      <div style="padding:10px 20px 10px;height:calc(100% - 25px);box-sizing:border-box;display:flex;flex-direction:column;">
+        <p style="font-size:13px;font-weight:700;color:#F59E0B;margin-bottom:8px;">📊&nbsp;&nbsp;Feature Engineering — Visual Overview</p>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;background:#0B132B;border-radius:6px;overflow:hidden;">
+          <img
+            src="features.png"
+            alt="Feature plot"
+            style="max-width:100%;max-height:100%;object-fit:contain;display:block;"
+            onerror="this.style.display='none';document.getElementById('img-fallback').style.display='flex';"
+          />
+          <div id="img-fallback" style="display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#475569;font-family:'Courier New',monospace;">
+            <span style="font-size:36px;">🖼️</span>
+            <span style="font-size:13px;">Place <strong style="color:#94A3B8;">features.png</strong> in the same folder as this file</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Bottom info cards (unchanged) ── -->
+    <div style="position:absolute;bottom:32px;left:60px;width:1160px;display:flex;gap:14px;z-index:10;">
+      <div style="flex:1;background:#1E293B;border-radius:6px;padding:10px 14px;border-left:4px solid #47B8E0;">
+        <p style="font-size:10px;font-weight:600;color:#47B8E0;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Missing Data</p>
+        <p style="font-size:12px;color:#CBD5E1;">Forward-fill holidays; drop non-trading gaps. Ensures no artificial discontinuities enter the feature set.</p>
+      </div>
+      <div style="flex:1;background:#1E293B;border-radius:6px;padding:10px 14px;border-left:4px solid #00A86B;">
+        <p style="font-size:10px;font-weight:600;color:#00A86B;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Stationarity</p>
+        <p style="font-size:12px;color:#CBD5E1;">ADF test confirms price levels are I(1); models operate on returns, which are stationary.</p>
+      </div>
+      <div style="flex:1;background:#1E293B;border-radius:6px;padding:10px 14px;border-left:4px solid #F59E0B;">
+        <p style="font-size:10px;font-weight:600;color:#F59E0B;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Feature Engineering</p>
+        <p style="font-size:12px;color:#CBD5E1;">Lag returns, EMA spreads, GARCH σ, candle body — 10 features total across all models.</p>
+      </div>
+      <div style="flex:1;background:#1E293B;border-radius:6px;padding:10px 14px;border-left:4px solid #EF4444;">
+        <p style="font-size:10px;font-weight:600;color:#EF4444;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Train / Test Split</p>
+        <p style="font-size:12px;color:#CBD5E1;">Chronological: 2003–2020 train / 2021–2023 test. No data leakage across the boundary.</p>
+      </div>
+    </div>
+
+    <div class="nav-dots">
+      <div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item active"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div>
+    </div>
+    <div class="slide-num">04 / 09</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SLIDE 5 — Statistical Model (1/2)
+══════════════════════════════════════ -->
+<div class="slide-wrapper">
+  <div class="slide-label">Slide 05 / 14</div>
+  <div class="slide">
+    <div class="top-bar"></div>
+    <div class="bottom-bar"></div>
+    <div style="position:absolute;top:22px;left:60px;z-index:10;">
+      <p class="s-tag">Model Used (1/4)</p>
+      <p class="s-title" style="margin-top:4px;">Statistical Model — Initial Features + Direction</p>
+    </div>
+    <div style="position:absolute;top:100px;left:60px;width:560px;background:#111827;border:1px solid #1E3A5F;border-radius:6px;padding:12px 16px;border-left:4px solid #00A86B;z-index:10;">
+      <span style="font-size:12px;font-weight:700;color:#F1F5F9;">Core Idea: </span>
+      <span style="font-size:12px;color:#CBD5E1;">Minimal interpretable OHLC-derived features → rule-based predictive system. Serves as the interpretable baseline against which ML models are benchmarked.</span>
+    </div>
+    <div style="position:absolute;top:158px;left:60px;width:560px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="display:flex;">
+        <div style="width:5px;background:#47B8E0;flex-shrink:0;"></div>
+        <div style="padding:10px 14px;flex:1;">
+          <p style="font-size:12px;font-weight:700;color:#F1F5F9;margin-bottom:6px;"><span style="color:#47B8E0;">1.</span> Trend Spread</p>
+          <div style="background:#0B132B;border:1px solid #1E293B;border-radius:4px;padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#E2E8F0;margin-bottom:5px;">feat<sub>t</sub> = EMA₅(C<sub>t</sub>) − EMA₂₀(C<sub>t</sub>)</div>
+          <p style="font-size:11px;color:#94A3B8;">Captures short-term vs long-term trend. A positive spread signals upward momentum; negative signals weakening price relative to its recent average.</p>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;top:272px;left:60px;width:560px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="display:flex;">
+        <div style="width:5px;background:#F59E0B;flex-shrink:0;"></div>
+        <div style="padding:10px 14px;flex:1;">
+          <p style="font-size:12px;font-weight:700;color:#F1F5F9;margin-bottom:6px;"><span style="color:#F59E0B;">2.</span> Trend Change</p>
+          <div style="background:#0B132B;border:1px solid #1E293B;border-radius:4px;padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#E2E8F0;margin-bottom:5px;">feat_change<sub>t</sub> = feat<sub>t</sub> − feat<sub>t−1</sub></div>
+          <p style="font-size:11px;color:#94A3B8;">Measures acceleration of trend, not just level. Momentum is often more predictive than the raw spread — a widening gap has more signal than a stable one.</p>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;top:388px;left:60px;width:560px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="display:flex;">
+        <div style="width:5px;background:#00A86B;flex-shrink:0;"></div>
+        <div style="padding:10px 14px;flex:1;">
+          <p style="font-size:12px;font-weight:700;color:#F1F5F9;margin-bottom:6px;"><span style="color:#00A86B;">3.</span> Rolling Volatility (Regime Detection)</p>
+          <div style="background:#0B132B;border:1px solid #1E293B;border-radius:4px;padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#E2E8F0;margin-bottom:5px;">std<sub>n</sub> = √(1/n · Σ(C<sub>t−i</sub> − μ)²) &nbsp;&nbsp; n = 5, 14, 25</div>
+          <p style="font-size:11px;color:#94A3B8;">Classifies: <span style="color:#EF4444;font-weight:600;">HIGH</span> / <span style="color:#F59E0B;font-weight:600;">MEDIUM</span> / <span style="color:#00A86B;font-weight:600;">LOW</span> volatility regimes. The ordering of std₅, std₁₄, std₂₅ reveals whether volatility is expanding or contracting.</p>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;top:508px;left:60px;width:560px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="display:flex;">
+        <div style="width:5px;background:#EF4444;flex-shrink:0;"></div>
+        <div style="padding:10px 14px;flex:1;">
+          <p style="font-size:12px;font-weight:700;color:#F1F5F9;margin-bottom:6px;"><span style="color:#EF4444;">4.</span> GARCH Volatility</p>
+          <div style="background:#0B132B;border:1px solid #1E293B;border-radius:4px;padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#E2E8F0;margin-bottom:5px;">σ²<sub>t</sub> = ω + αε²<sub>t−1</sub> + βσ²<sub>t−1</sub></div>
+          <p style="font-size:11px;color:#94A3B8;">Captures time-varying conditional volatility. Unlike rolling std, GARCH weights recent shocks more heavily, making it better suited for predicting near-term move magnitude.</p>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;top:100px;left:660px;width:570px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="display:flex;">
+        <div style="width:5px;background:#47B8E0;flex-shrink:0;"></div>
+        <div style="padding:12px 16px;flex:1;">
+          <p style="font-size:13px;font-weight:700;color:#F1F5F9;margin-bottom:10px;">Direction Model (EMA Threshold)</p>
+          <div style="background:#0B132B;border:1px solid #1E293B;border-radius:4px;padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#E2E8F0;margin-bottom:8px;white-space:pre;">d<sub>t</sub> = &#123;  +1  if feat<sub>t</sub> &gt; γ
+     −1  if feat<sub>t</sub> &lt; −β</div>
+          <p style="font-size:12px;color:#CBD5E1;">Parameters <span style="color:#F59E0B;font-weight:700;">β, γ</span> optimized over 2003–2020 to maximize directional accuracy. The asymmetric thresholds allow the model to be more or less aggressive on each side of the market.</p>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;top:282px;left:660px;width:570px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="display:flex;">
+        <div style="width:5px;background:#F59E0B;flex-shrink:0;"></div>
+        <div style="padding:12px 16px;flex:1;">
+          <p style="font-size:13px;font-weight:700;color:#F1F5F9;margin-bottom:8px;">Parameter Optimization (β, γ)</p>
+          <ul class="tbullet">
+            <li>Optimized over 2003–2020 training window</li>
+            <li>Objective: maximize directional accuracy / returns</li>
+            <li class="green" style="color:#00A86B;font-weight:600;">Re-optimized every 7 days (walk-forward)</li>
+          </ul>
+          <p style="font-size:11px;color:#64748B;margin-top:8px;">Re-optimization prevents the thresholds from becoming stale in new market regimes — a fixed threshold tuned on 2003 data would systematically misfire post-2015.</p>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;top:430px;left:660px;width:570px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="display:flex;">
+        <div style="width:5px;background:#00A86B;flex-shrink:0;"></div>
+        <div style="padding:12px 16px;flex:1;">
+          <p style="font-size:13px;font-weight:700;color:#F1F5F9;margin-bottom:8px;">Walk-Forward Framework</p>
+          <ul class="tbullet">
+            <li>Train: 2003–2020 &nbsp;|&nbsp; Test: 2021–2023</li>
+            <li>Refit every 7 days &nbsp;|&nbsp; Strict zero lookahead</li>
+          </ul>
+          <p style="font-size:11px;color:#64748B;margin-top:8px;">Walk-forward validation mimics live trading conditions: the model only ever sees data that would have been available on the prediction date, giving realistic out-of-sample performance estimates.</p>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;top:568px;left:660px;width:570px;background:#0B132B;border:1px solid #1E3A5F;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="height:4px;background:#00A86B;"></div>
+      <div style="padding:12px 16px;">
+        <p style="font-size:12px;color:#CBD5E1;"><span style="color:#00A86B;font-weight:700;">💡 Key Insight: </span>Simple trend signals require dynamic thresholds (β, γ) to adapt to changing market regimes. Static rules that worked in a trending regime will fail in a range-bound one.</p>
+      </div>
+    </div>
+    <div class="nav-dots">
+      <div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item active"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div>
+    </div>
+    <div class="slide-num">05 / 09</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SLIDE 6 — Statistical Model (2/2)
+══════════════════════════════════════ -->
+<div class="slide-wrapper">
+  <div class="slide-label">Slide 06 / 14</div>
+  <div class="slide">
+    <div class="top-bar"></div>
+    <div class="bottom-bar"></div>
+    <div style="position:absolute;top:22px;left:60px;z-index:10;">
+      <p class="s-tag">Model Used (2/4)</p>
+      <p class="s-title" style="margin-top:4px;">Statistical Model — Full Architecture</p>
+    </div>
+    <!-- LEFT: Model Components -->
+    <div style="position:absolute;top:100px;left:60px;width:560px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="display:flex;">
+        <div style="width:5px;background:#EF4444;flex-shrink:0;"></div>
+        <div style="padding:10px 14px;flex:1;">
+          <p style="font-size:12px;font-weight:700;color:#F1F5F9;margin-bottom:6px;"><span style="color:#EF4444;">1.</span> Volatility Model (GARCH)</p>
+          <div style="background:#0B132B;border:1px solid #1E293B;border-radius:4px;padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#E2E8F0;margin-bottom:5px;">σ²<sub>t</sub> = ω + αε²<sub>t−1</sub> + βσ²<sub>t−1</sub></div>
+          <p style="font-size:11px;color:#94A3B8;">Captures time-varying conditional volatility. GARCH is fit on returns and its one-step-ahead forecast σ<sub>t</sub> is fed directly into the price prediction formula as the move magnitude scalar.</p>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;top:228px;left:60px;width:560px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="display:flex;">
+        <div style="width:5px;background:#F59E0B;flex-shrink:0;"></div>
+        <div style="padding:10px 14px;flex:1;">
+          <p style="font-size:12px;font-weight:700;color:#F1F5F9;margin-bottom:6px;"><span style="color:#F59E0B;">2.</span> Regime Detection</p>
+          <p style="font-size:11px;color:#94A3B8;margin-bottom:6px;">Using rolling std ordering:</p>
+          <ul class="tbullet">
+            <li class="red" style="color:#EF4444;font-weight:700;">HIGH: &nbsp;&nbsp;std₅ &gt; std₁₄ &gt; std₂₅</li>
+            <li class="green" style="color:#00A86B;font-weight:700;">LOW: &nbsp;&nbsp; std₅ &lt; std₁₄ &lt; std₂₅</li>
+            <li class="amber" style="color:#F59E0B;font-weight:700;">MEDIUM: otherwise</li>
+          </ul>
+          <p style="font-size:11px;color:#64748B;margin-top:8px;">Regime labels scale the GARCH σ<sub>t</sub> used in prediction — HIGH regime uses full σ, MEDIUM uses half, LOW predicts no move. This prevents overtrading in calm markets.</p>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;top:410px;left:60px;width:560px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="display:flex;">
+        <div style="width:5px;background:#47B8E0;flex-shrink:0;"></div>
+        <div style="padding:10px 14px;flex:1;">
+          <p style="font-size:12px;font-weight:700;color:#F1F5F9;margin-bottom:6px;"><span style="color:#47B8E0;">3.</span> Direction Model (Initial)</p>
+          <ul class="tbullet">
+            <li>EMA₅–EMA₂₀ threshold strategy</li>
+            <li>Parameters γ, β optimized via walk-forward</li>
+          </ul>
+          <p style="font-size:11px;color:#64748B;margin-top:8px;">This stage outputs a binary signal (+1 / –1). It is intentionally kept simple to isolate the effect of the regime and volatility components in the final prediction.</p>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;top:542px;left:60px;width:560px;background:#0B132B;border:1px solid #1E3A5F;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="height:4px;background:#00A86B;"></div>
+      <div style="padding:12px 16px;">
+        <p style="font-size:12px;color:#CBD5E1;"><span style="color:#00A86B;font-weight:700;">💡 Key Insight: </span>Combines volatility modeling + regime awareness + directional signal into a single modular architecture. Each component can be replaced independently when ML models are tested.</p>
+      </div>
+    </div>
+    <!-- RIGHT: Prediction Logic -->
+    <div style="position:absolute;top:100px;left:660px;width:570px;z-index:10;">
+      <p style="font-size:13px;font-weight:700;color:#F1F5F9;margin-bottom:10px;">Prediction Logic</p>
+      <div style="background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;margin-bottom:10px;">
+        <div style="display:flex;">
+          <div style="width:5px;background:#EF4444;flex-shrink:0;"></div>
+          <div style="padding:10px 14px;flex:1;">
+            <p style="font-size:11px;font-weight:700;color:#EF4444;margin-bottom:5px;">HIGH:</p>
+            <div style="background:#0B132B;border:1px solid #1E293B;border-radius:4px;padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#E2E8F0;">C<sub>t+1</sub> = C<sub>t</sub> + d<sub>t</sub> · σ<sub>t</sub> · C<sub>t</sub></div>
+            <p style="font-size:11px;color:#64748B;margin-top:5px;">Full GARCH volatility applied — large moves expected. Direction is amplified by current price level.</p>
+          </div>
+        </div>
+      </div>
+      <div style="background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;margin-bottom:10px;">
+        <div style="display:flex;">
+          <div style="width:5px;background:#00A86B;flex-shrink:0;"></div>
+          <div style="padding:10px 14px;flex:1;">
+            <p style="font-size:11px;font-weight:700;color:#00A86B;margin-bottom:5px;">LOW:</p>
+            <div style="background:#0B132B;border:1px solid #1E293B;border-radius:4px;padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#E2E8F0;">C<sub>t+1</sub> = C<sub>t</sub></div>
+            <p style="font-size:11px;color:#64748B;margin-top:5px;">No predicted move — market is quiet. Holding flat avoids overtrading in low-signal environments.</p>
+          </div>
+        </div>
+      </div>
+      <div style="background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;margin-bottom:16px;">
+        <div style="display:flex;">
+          <div style="width:5px;background:#F59E0B;flex-shrink:0;"></div>
+          <div style="padding:10px 14px;flex:1;">
+            <p style="font-size:11px;font-weight:700;color:#F59E0B;margin-bottom:5px;">MEDIUM:</p>
+            <div style="background:#0B132B;border:1px solid #1E293B;border-radius:4px;padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#E2E8F0;">C<sub>t+1</sub> = C<sub>t</sub> + d<sub>t</sub> · 0.5 · σ<sub>t</sub> · C<sub>t</sub></div>
+            <p style="font-size:11px;color:#64748B;margin-top:5px;">Half-volatility applied — moderate conviction. Reduces position sizing during transitional periods.</p>
+          </div>
+        </div>
+      </div>
+      <div style="background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;margin-bottom:10px;">
+        <div style="display:flex;">
+          <div style="width:5px;background:#00A86B;flex-shrink:0;"></div>
+          <div style="padding:10px 14px;flex:1;">
+            <p style="font-size:13px;font-weight:700;color:#F1F5F9;margin-bottom:6px;">Walk-Forward Framework</p>
+            <ul class="tbullet">
+              <li>Train: 2003–2020 &nbsp;|&nbsp; Test: 2021–2023</li>
+              <li>Refit every 7 days &nbsp;|&nbsp; Strict zero lookahead bias</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div style="background:#1E293B;border-radius:6px;padding:10px 14px;">
+        <p style="font-size:12px;color:#CBD5E1;"><span style="color:#94A3B8;font-weight:600;">Statistical vs ML: </span>Stat model = interpretable &amp; fast; <span style="color:#47B8E0;">ML models add nonlinearity &amp; feature interactions</span> at the cost of interpretability.</p>
+      </div>
+    </div>
+    <div class="nav-dots">
+      <div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item active"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div>
+    </div>
+    <div class="slide-num">06 / 09</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SLIDE 7 — Decision Trees (Main Model)
+══════════════════════════════════════ -->
+<div class="slide-wrapper">
+  <div class="slide-label">Slide 07 / 14</div>
+  <div class="slide">
+    <div class="top-bar"></div>
+    <div class="bottom-bar"></div>
+    <div style="position:absolute;top:22px;left:60px;z-index:10;">
+      <p class="s-tag">Model Used (3/4)</p>
+      <p class="s-title" style="margin-top:4px;">Decision Trees — Main Model (Expanded)</p>
+    </div>
+    <div style="position:absolute;top:98px;left:60px;width:1160px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="height:4px;background:#00A86B;"></div>
+      <div style="padding:9px 18px;">
+        <p style="font-size:12.5px;color:#CBD5E1;"><span style="color:#00A86B;font-weight:700;">Motivation: </span>Replace rigid threshold-based direction with <strong style="color:#F1F5F9;">data-driven nonlinear classification</strong>. Unlike the statistical model, the tree discovers its own split conditions from the data — no manual threshold tuning required.</p>
+      </div>
+    </div>
+    <div style="position:absolute;top:158px;left:60px;z-index:10;">
+      <p style="font-size:13px;font-weight:700;color:#F1F5F9;">Full Feature Set (10 Features)</p>
+    </div>
+    <!-- Feature grid -->
+    <div style="position:absolute;top:186px;left:60px;width:310px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="display:flex;">
+        <div style="width:5px;background:#47B8E0;flex-shrink:0;"></div>
+        <div style="padding:10px 12px;flex:1;">
+          <p style="font-size:11px;font-weight:700;color:#47B8E0;margin-bottom:8px;">Trend / Momentum</p>
+          <div style="background:#0B132B;border:1px solid #1E293B;border-radius:3px;padding:4px 8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#E2E8F0;margin-bottom:4px;">feat = EMA₅ − EMA₂₀</div>
+          <div style="background:#0B132B;border:1px solid #1E293B;border-radius:3px;padding:4px 8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#E2E8F0;margin-bottom:4px;">feat_change = feat<sub>t</sub> − feat<sub>t−1</sub></div>
+          <div style="background:#0B132B;border:1px solid #1E293B;border-radius:3px;padding:4px 8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#E2E8F0;margin-bottom:4px;">ret<sub>1d</sub> = (C<sub>t</sub>−C<sub>t−1</sub>)/C<sub>t−1</sub></div>
+          <div style="background:#0B132B;border:1px solid #1E293B;border-radius:3px;padding:4px 8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#E2E8F0;">ret<sub>3d</sub> = (C<sub>t</sub>−C<sub>t−3</sub>)/C<sub>t−3</sub></div>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;top:186px;left:386px;width:260px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="display:flex;">
+        <div style="width:5px;background:#F59E0B;flex-shrink:0;"></div>
+        <div style="padding:10px 12px;flex:1;">
+          <p style="font-size:11px;font-weight:700;color:#F59E0B;margin-bottom:8px;">Relative Position</p>
+          <div style="background:#0B132B;border:1px solid #1E293B;border-radius:3px;padding:5px 8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#E2E8F0;line-height:1.5;">price_vs_ema20 =<br>(C<sub>t</sub> − EMA₂₀) / EMA₂₀</div>
+          <p style="font-size:10.5px;color:#64748B;margin-top:6px;">Normalised distance from long-term moving average — captures mean-reversion tendency.</p>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;top:316px;left:386px;width:260px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="display:flex;">
+        <div style="width:5px;background:#00A86B;flex-shrink:0;"></div>
+        <div style="padding:10px 12px;flex:1;">
+          <p style="font-size:11px;font-weight:700;color:#00A86B;margin-bottom:8px;">Volatility Interaction</p>
+          <div style="background:#0B132B;border:1px solid #1E293B;border-radius:3px;padding:4px 8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#E2E8F0;margin-bottom:4px;">vol_ratio = std₅ / std₂₅</div>
+          <p style="font-size:10.5px;color:#CBD5E1;">GARCH σ²<sub>t</sub></p>
+          <p style="font-size:10.5px;color:#64748B;margin-top:4px;">vol_ratio &gt; 1 signals expanding volatility; useful for regime classification within the tree.</p>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;top:448px;left:60px;width:586px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="display:flex;">
+        <div style="width:5px;background:#EF4444;flex-shrink:0;"></div>
+        <div style="padding:10px 14px;flex:1;">
+          <p style="font-size:11px;font-weight:700;color:#EF4444;margin-bottom:8px;">Candle Structure + Memory</p>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+            <div style="background:#0B132B;border:1px solid #1E293B;border-radius:3px;padding:5px 7px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#E2E8F0;line-height:1.5;">intraday_body =<br>(C<sub>t</sub>−O<sub>t</sub>)/O<sub>t</sub></div>
+            <div style="background:#0B132B;border:1px solid #1E293B;border-radius:3px;padding:5px 7px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#E2E8F0;line-height:1.5;">wick_upper =<br>(H<sub>t</sub>−C<sub>t</sub>)/(H<sub>t</sub>−L<sub>t</sub>+ε)</div>
+            <div style="background:#0B132B;border:1px solid #1E293B;border-radius:3px;padding:5px 7px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#E2E8F0;line-height:1.5;">close_in_range =<br>(C<sub>t</sub>−L<sub>t</sub>)/(H<sub>t</sub>−L<sub>t</sub>+ε)</div>
+            <div style="background:#0B132B;border:1px solid #1E293B;border-radius:3px;padding:5px 7px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#E2E8F0;line-height:1.5;">prev_direction =<br>sign(C<sub>t</sub>−C<sub>t−1</sub>)</div>
+          </div>
+          <p style="font-size:10.5px;color:#64748B;margin-top:7px;">Candle features encode intraday sentiment — a close near the high suggests bullish follow-through; a long upper wick suggests rejection. prev_direction adds one-day serial memory.</p>
+        </div>
+      </div>
+    </div>
+    <!-- RIGHT -->
+    <div style="position:absolute;top:186px;left:690px;width:530px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="display:flex;">
+        <div style="width:5px;background:#47B8E0;flex-shrink:0;"></div>
+        <div style="padding:10px 14px;flex:1;">
+          <p style="font-size:13px;font-weight:700;color:#F1F5F9;margin-bottom:8px;">Model Behavior — Learns:</p>
+          <ul class="tbullet">
+            <li>Nonlinear thresholds from data (no manual tuning)</li>
+            <li>Feature interactions (momentum × volatility)</li>
+            <li>Regime-dependent decision rules automatically</li>
+          </ul>
+          <p style="font-size:11px;color:#64748B;margin-top:7px;">Each internal node of the tree splits on the feature and threshold that maximises information gain — effectively learning regime-conditional rules that the statistical model required hand-crafting.</p>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;top:340px;left:690px;width:530px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="display:flex;">
+        <div style="width:5px;background:#00A86B;flex-shrink:0;"></div>
+        <div style="padding:10px 14px;flex:1;">
+          <p style="font-size:13px;font-weight:700;color:#F1F5F9;margin-bottom:8px;">Why It Performed Best</p>
+          <ul class="tbullet">
+            <li>No assumption of linearity</li>
+            <li>Captures momentum × volatility interactions</li>
+            <li>Captures trend × candle structure naturally</li>
+            <li class="green" style="font-weight:600;">Robust to noisy financial data</li>
+          </ul>
+          <p style="font-size:11px;color:#64748B;margin-top:7px;">Depth-limited trees (max_depth tuned via CV) prevent memorising noise while still capturing the key nonlinear patterns that drive USD/INR directional moves.</p>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;top:498px;left:690px;width:530px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="display:flex;">
+        <div style="width:5px;background:#F59E0B;flex-shrink:0;"></div>
+        <div style="padding:10px 14px;flex:1;">
+          <p style="font-size:13px;font-weight:700;color:#F1F5F9;margin-bottom:8px;">Integration — Same Pipeline:</p>
+          <ul class="tbullet">
+            <li>Direction → Decision Tree (replaces EMA rule)</li>
+            <li>Prediction → same regime-based magnitude formula</li>
+            <li>Walk-forward retrain every 7 days</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;top:610px;left:690px;width:530px;background:#0B132B;border:1px solid #1E3A5F;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="height:4px;background:#00A86B;"></div>
+      <div style="padding:10px 14px;">
+        <p style="font-size:12px;color:#CBD5E1;"><span style="color:#00A86B;font-weight:700;">💡 </span>Best model across DA, RMSE &amp; Sharpe — chosen as final strategy model</p>
+      </div>
+    </div>
+    <div class="nav-dots">
+      <div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item active"></div><div class="dot-item"></div><div class="dot-item"></div>
+    </div>
+    <div class="slide-num">07 / 09</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SLIDE 8 — KNN + Model Comparison
+══════════════════════════════════════ -->
+<div class="slide-wrapper">
+  <div class="slide-label">Slide 08 / 14</div>
+  <div class="slide">
+    <div class="top-bar"></div>
+    <div class="bottom-bar"></div>
+    <div style="position:absolute;top:22px;left:60px;z-index:10;">
+      <p class="s-tag">Model Used (4/4)</p>
+      <p class="s-title" style="margin-top:4px;">KNN — Pattern Recognition Model</p>
+    </div>
+    <div style="position:absolute;top:98px;left:60px;width:1160px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="height:4px;background:#47B8E0;"></div>
+      <div style="padding:9px 18px;">
+        <p style="font-size:12.5px;color:#CBD5E1;"><span style="color:#47B8E0;font-weight:700;">Idea: </span>ŷ = majority vote of nearest neighbors — works as a <strong style="color:#F1F5F9;">pattern recognition model</strong> — finds similar past market states and votes on tomorrow's direction based on what those states led to historically.</p>
+      </div>
+    </div>
+    <!-- Three columns -->
+    <div style="position:absolute;top:160px;left:60px;width:356px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="display:flex;">
+        <div style="width:5px;background:#47B8E0;flex-shrink:0;"></div>
+        <div style="padding:12px 14px;flex:1;">
+          <p style="font-size:13px;font-weight:700;color:#F1F5F9;margin-bottom:10px;">Setup</p>
+          <p style="font-size:12px;color:#CBD5E1;margin-bottom:5px;">Same 10 features as Decision Tree</p>
+          <p style="font-size:11px;color:#94A3B8;margin-bottom:5px;">Standardized:</p>
+          <div style="background:#0B132B;border:1px solid #1E293B;border-radius:4px;padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#E2E8F0;margin-bottom:8px;">x' = (x − μ) / σ</div>
+          <p style="font-size:12px;color:#CBD5E1;margin-bottom:4px;">Distance metric: Euclidean</p>
+          <p style="font-size:12px;color:#CBD5E1;margin-bottom:8px;">Output: majority class vote among k nearest training points</p>
+          <p style="font-size:11px;color:#64748B;">Standardization is critical — without it, features with larger scales (e.g. price levels) would dominate the distance calculation and mask the contribution of smaller but predictive features like wick ratios.</p>
+          <p style="font-size:12px;color:#00A86B;font-weight:700;margin-top:6px;">Walk-forward: retrain every 7 days</p>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;top:160px;left:432px;width:356px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="display:flex;">
+        <div style="width:5px;background:#F59E0B;flex-shrink:0;"></div>
+        <div style="padding:12px 14px;flex:1;">
+          <p style="font-size:13px;font-weight:700;color:#F1F5F9;margin-bottom:10px;">Tuning</p>
+          <p style="font-size:11px;color:#94A3B8;margin-bottom:5px;">k search space:</p>
+          <div style="background:#0B132B;border:1px solid #1E293B;border-radius:4px;padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#E2E8F0;margin-bottom:10px;">k ∈ {3, 5, 7, 9, 11, 15, 21, 31}</div>
+          <p style="font-size:11px;color:#94A3B8;margin-bottom:4px;">Validation:</p>
+          <p style="font-size:12px;color:#CBD5E1;margin-bottom:8px;">5-fold cross-validation on training window</p>
+          <p style="font-size:11px;color:#94A3B8;margin-bottom:4px;">Selection criterion:</p>
+          <p style="font-size:12px;color:#CBD5E1;margin-bottom:8px;">Best k by directional accuracy on validation set</p>
+          <p style="font-size:11px;color:#64748B;">Small k (e.g. 3) risks overfitting to noisy market microstructure; large k (e.g. 31) averages across too many dissimilar regimes. The CV procedure finds the optimal balance for each 7-day window.</p>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;top:160px;left:804px;width:416px;z-index:10;">
+      <div style="background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;margin-bottom:10px;">
+        <div style="display:flex;">
+          <div style="width:5px;background:#00A86B;flex-shrink:0;"></div>
+          <div style="padding:10px 14px;flex:1;">
+            <p style="font-size:13px;font-weight:700;color:#F1F5F9;margin-bottom:8px;">Why KNN</p>
+            <ul class="tbullet">
+              <li>Non-parametric — no distribution assumption</li>
+              <li>Naturally captures regime clustering</li>
+              <li>Effective for market state matching</li>
+            </ul>
+            <p style="font-size:11px;color:#64748B;margin-top:7px;">FX markets often revisit similar macro states — KNN implicitly exploits this by identifying historical analogs to the current market environment and voting on direction.</p>
+          </div>
+        </div>
+      </div>
+      <div style="background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;">
+        <div style="display:flex;">
+          <div style="width:5px;background:#EF4444;flex-shrink:0;"></div>
+          <div style="padding:10px 14px;flex:1;">
+            <p style="font-size:13px;font-weight:700;color:#F1F5F9;margin-bottom:8px;">Limitations</p>
+            <ul class="tbullet">
+              <li>Sensitive to noise in features</li>
+              <li>No explicit feature interaction learning</li>
+              <li>Computationally expensive at inference on large history</li>
+              <li class="red" style="color:#EF4444;font-weight:700;">Underperforms Decision Tree on directional accuracy</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Comparison Table -->
+    <div style="position:absolute;bottom:36px;left:60px;width:1160px;z-index:10;">
+      <p style="font-size:13px;font-weight:700;color:#F1F5F9;margin-bottom:8px;">Model Comparison (All 4 Models)</p>
+      <table class="ctable" style="background:#111827;border-radius:6px;overflow:hidden;border:1px solid #1E293B;">
+        <thead>
+          <tr>
+            <th style="width:18%;">Model</th>
+            <th style="width:18%;">Type</th>
+            <th style="width:14%;">Nonlinear?</th>
+            <th style="width:25%;">Feature Interactions</th>
+            <th>Best For</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="stat-row">
+            <td style="color:#94A3B8;font-weight:600;">Statistical</td>
+            <td>Rule-based</td><td>No</td><td>Manual only</td><td>Interpretable baseline</td>
+          </tr>
+          <tr class="dt-row">
+            <td style="color:#00A86B;font-weight:700;">Decision Tree ✓</td>
+            <td>ML Classifier</td><td style="color:#00A86B;font-weight:600;">Yes</td><td style="color:#00A86B;">Automatic</td><td style="color:#00A86B;font-weight:600;">Best overall DA + Sharpe</td>
+          </tr>
+          <tr class="knn-row">
+            <td style="color:#47B8E0;font-weight:600;">KNN</td>
+            <td>Instance-based</td><td style="color:#47B8E0;">Yes</td><td>Implicit</td><td>Pattern matching</td>
+          </tr>
+          <tr class="lda-row">
+            <td style="color:#F59E0B;font-weight:600;">LDA + Ridge</td>
+            <td>Linear ML</td><td>No</td><td>Limited</td><td>Fast, stable linear baseline</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="nav-dots">
+      <div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item active"></div><div class="dot-item"></div>
+    </div>
+    <div class="slide-num">08 / 09</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SLIDE 9 — LDA + Ridge (Two-Stage Model)
+══════════════════════════════════════ -->
+<div class="slide-wrapper">
+  <div class="slide-label">Slide 09 / 14</div>
+  <div class="slide">
+    <div class="top-bar"></div>
+    <div class="bottom-bar"></div>
+
+    <div style="position:absolute;top:22px;left:60px;z-index:10;">
+      <p class="s-tag">Model Used — Special Architecture</p>
+      <p class="s-title" style="margin-top:4px;">LDA + Ridge — Two-Stage Direction &amp; Magnitude Model</p>
+    </div>
+
+    <!-- Motivation banner -->
+    <div style="position:absolute;top:98px;left:60px;width:1160px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;z-index:10;">
+      <div style="height:4px;background:linear-gradient(90deg,#47B8E0,#F59E0B);"></div>
+      <div style="padding:9px 18px;">
+        <p style="font-size:12.5px;color:#CBD5E1;"><span style="color:#47B8E0;font-weight:700;">Key Design Idea: </span>Decompose the prediction task into two independent sub-problems — <strong style="color:#F1F5F9;">which way?</strong> (LDA) and <strong style="color:#F1F5F9;">how much?</strong> (Ridge) — using different feature sets, because these two questions have different information sources.</p>
+      </div>
+    </div>
+
+    <!-- STAGE 1: LDA -->
+    <div style="position:absolute;top:156px;left:60px;width:560px;z-index:10;">
+      <div class="lda-stage-card">
+        <div class="lda-stage-bar" style="background:#47B8E0;"></div>
+        <div class="lda-stage-inner">
+          <div style="display:flex;align-items:center;margin-bottom:10px;">
+            <div style="background:rgba(71,184,224,0.15);border:1px solid rgba(71,184,224,0.4);border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700;color:#47B8E0;font-family:'JetBrains Mono',monospace;margin-right:10px;">STAGE 1</div>
+            <p style="font-size:14px;font-weight:700;color:#F1F5F9;">Direction Model — Linear Discriminant Analysis</p>
+          </div>
+
+          <p style="font-size:11.5px;color:#CBD5E1;margin-bottom:10px;">LDA finds the single linear combination of features that maximally separates the +1 class (up days) from the −1 class (down days). It draws the best straight decision boundary in the 5-feature space — analogous to projecting the data onto the axis of maximum class separability.</p>
+
+          <p style="font-size:11px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Features</p>
+          <div style="margin-bottom:10px;">
+            <span class="feature-pill">feat = (EMA₅−EMA₂₀)/EMA₂₀</span>
+            <span class="feature-pill">price_vs_ema20</span>
+            <span class="feature-pill">ret_1d</span>
+            <span class="feature-pill">ret_3d</span>
+            <span class="feature-pill">prev_direction</span>
+          </div>
+
+          <p style="font-size:11px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Target</p>
+          <div style="display:flex;gap:10px;margin-bottom:10px;">
+            <div style="background:rgba(0,168,107,0.1);border:1px solid rgba(0,168,107,0.3);border-radius:4px;padding:5px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#00A86B;">+1.0 &nbsp;if next_return ≥ 0</div>
+            <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:4px;padding:5px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#EF4444;">−1.0 &nbsp;if next_return &lt; 0</div>
+          </div>
+
+          <p style="font-size:11px;color:#64748B;">Momentum and trend signals are routed here because they contain directional information — the EMA spread and recent returns naturally encode the market's current tendency to move up or down.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- STAGE 2: Ridge -->
+    <div style="position:absolute;top:156px;left:650px;width:570px;z-index:10;">
+      <div class="lda-stage-card">
+        <div class="lda-stage-bar" style="background:#F59E0B;"></div>
+        <div class="lda-stage-inner">
+          <div style="display:flex;align-items:center;margin-bottom:10px;">
+            <div style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700;color:#F59E0B;font-family:'JetBrains Mono',monospace;margin-right:10px;">STAGE 2</div>
+            <p style="font-size:14px;font-weight:700;color:#F1F5F9;">Magnitude Model — Ridge Regression (CV)</p>
+          </div>
+
+          <p style="font-size:11.5px;color:#CBD5E1;margin-bottom:10px;">Ridge predicts the absolute size of tomorrow's move — i.e. how much the price will change, regardless of direction. RidgeCV selects regularisation alpha automatically from {0.01, 0.1, 1, 10, 100, 1000} using 5-fold CV to prevent overfitting on volatile sub-periods.</p>
+
+          <p style="font-size:11px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Features</p>
+          <div style="margin-bottom:10px;">
+            <span class="feature-pill">feat_change</span>
+            <span class="feature-pill">vol_ratio = std₅/std₂₅</span>
+            <span class="feature-pill">intraday_body</span>
+            <span class="feature-pill">wick_upper</span>
+            <span class="feature-pill">close_in_range</span>
+          </div>
+
+          <p style="font-size:11px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Target</p>
+          <div style="background:#0B132B;border:1px solid #1E293B;border-radius:4px;padding:6px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#E2E8F0;margin-bottom:10px;">abs(next_day_return) &nbsp; — always ≥ 0 (clamped)</div>
+
+          <p style="font-size:11px;color:#64748B;">Volatility and microstructure signals are routed here — candle body size and wick lengths reflect intraday pressure and energy, which are more informative about move size than about direction.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Synthesis + Walk-Forward row -->
+    <div style="position:absolute;bottom:36px;left:60px;width:1160px;display:flex;gap:14px;z-index:10;">
+      <!-- Synthesis -->
+      <div style="flex:2;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;">
+        <div style="height:4px;background:linear-gradient(90deg,#47B8E0,#F59E0B);"></div>
+        <div style="padding:12px 16px;">
+          <p style="font-size:12px;font-weight:700;color:#F1F5F9;margin-bottom:8px;">Synthesis — Combining Both Stages</p>
+          <div style="background:#0B132B;border:1px solid #1E293B;border-radius:4px;padding:7px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#E2E8F0;margin-bottom:7px;">predicted_return = direction_sign × predicted_magnitude</div>
+          <div style="background:#0B132B;border:1px solid #1E293B;border-radius:4px;padding:7px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#E2E8F0;">next_close = current_close × (1 + predicted_return)</div>
+        </div>
+      </div>
+      <!-- Walk-Forward -->
+      <div style="flex:1.5;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;">
+        <div style="height:4px;background:#00A86B;"></div>
+        <div style="padding:12px 16px;">
+          <p style="font-size:12px;font-weight:700;color:#F1F5F9;margin-bottom:8px;">Walk-Forward Setup</p>
+          <ul class="tbullet">
+            <li>Initial train: 2003–2020</li>
+            <li>Test: 2021–2023 · Refit every 7 days</li>
+            <li>Rolling 1000-day window per refit</li>
+            <li class="green" style="font-weight:600;">Zero lookahead at all times</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Rationale -->
+      <div style="flex:1.5;background:#0B132B;border:1px solid #1E3A5F;border-radius:6px;overflow:hidden;">
+        <div style="height:4px;background:#47B8E0;"></div>
+        <div style="padding:12px 16px;">
+          <p style="font-size:12px;font-weight:700;color:#F1F5F9;margin-bottom:8px;">Why Split Features?</p>
+          <p style="font-size:11.5px;color:#CBD5E1;">Mixing direction and magnitude into one model forces it to jointly optimise for two competing objectives. Separating them lets each sub-model specialise, reducing in-sample bias and improving generalisation.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-dots">
+      <div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item active"></div>
+    </div>
+    <div class="slide-num">09 / 09</div>
+  </div>
+</div>
+
+</body>
+</html>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<title>USD/INR Results Slides 10–13</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #060d1f;
+    font-family: 'Inter', sans-serif;
+    color: #E2E8F0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+    padding: 40px 20px;
+  }
+  .slide-wrapper { width: 1280px; position: relative; }
+  .slide-label { font-size: 12px; color: #475569; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; font-family: 'JetBrains Mono', monospace; }
+  .slide { position: relative; width: 1280px; height: 720px; overflow: hidden; background-color: #0B132B; box-shadow: 0 25px 80px rgba(0,0,0,0.6); }
+
+  .top-bar { position: absolute; top: 0; left: 0; width: 100%; height: 6px; z-index: 5; }
+  .bottom-bar { position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, #00A86B 0%, #47B8E0 50%, transparent 100%); opacity: 0.4; }
+  .nav-dots { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 10; }
+  .dot-item { width: 6px; height: 6px; border-radius: 50%; background: #1E3A5F; }
+  .dot-item.active { background: #00A86B; width: 20px; border-radius: 3px; }
+  .slide-num { position: absolute; bottom: 18px; right: 30px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #334155; z-index: 10; }
+
+  .s-tag { font-size: 11px; color: #47B8E0; text-transform: uppercase; letter-spacing: 2px; font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+  .s-title { font-size: 24px; font-weight: 700; color: #F1F5F9; line-height: 1.2; margin-top: 4px; }
+
+  /* stat box */
+  .stat-box {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #111827; border: 1px solid #1E293B; border-radius: 6px;
+    padding: 8px 14px; min-width: 110px;
+  }
+  .stat-val { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; }
+  .stat-lbl { font-size: 9.5px; color: #64748B; text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; text-align: center; }
+
+  /* results table */
+  .rtable { width: 100%; border-collapse: collapse; }
+  .rtable th { font-size: 10.5px; color: #94A3B8; text-align: center; padding: 5px 8px; background: #1E293B; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+  .rtable th:first-child { text-align: left; }
+  .rtable td { font-size: 11px; color: #CBD5E1; padding: 5px 8px; border-bottom: 1px solid #1E293B; text-align: center; font-family: 'JetBrains Mono', monospace; }
+  .rtable td:first-child { text-align: left; color: #94A3B8; }
+  .rtable tr:last-child td { border-bottom: none; }
+  .rtable tr.overall-row td { background: rgba(0,168,107,0.08); color: #F1F5F9; font-weight: 600; }
+
+  /* mini metric row */
+  .metric-pill {
+    display: inline-flex; flex-direction: column; align-items: center;
+    background: #111827; border: 1px solid #1E293B; border-radius: 5px;
+    padding: 6px 12px;
+  }
+  .metric-pill .mv { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; }
+  .metric-pill .ml { font-size: 9px; color: #64748B; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
+
+  ul.tbullet { list-style: none; margin: 0; padding: 0; }
+  ul.tbullet li { font-size: 12px; color: #CBD5E1; margin-bottom: 5px; padding-left: 14px; position: relative; line-height: 1.45; }
+  ul.tbullet li::before { content: '▪'; position: absolute; left: 0; color: #47B8E0; font-size: 10px; top: 2px; }
+  ul.tbullet li.green::before { color: #00A86B; }
+  ul.tbullet li.amber::before { color: #F59E0B; }
+  ul.tbullet li.red::before   { color: #EF4444; }
+
+  /* graph placeholder */
+  .graph-container {
+    background: #0d1a2e;
+    border: 1px solid #1E293B;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .graph-img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: top;
+  }
+
+  /* insight box */
+  .insight-box {
+    border-radius: 6px; overflow: hidden;
+  }
+  .insight-bar { height: 4px; }
+  .insight-inner { padding: 11px 14px; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 10 — Statistical Model Results
+══════════════════════════════════════════════ -->
+<div class="slide-wrapper">
+  <div class="slide-label">Slide 10 / 14</div>
+  <div class="slide">
+    <div class="top-bar" style="background:#F59E0B;"></div>
+    <div class="bottom-bar"></div>
+
+    <!-- Header -->
+    <div style="position:absolute;top:20px;left:60px;z-index:10;">
+      <p class="s-tag">Results (1/4) — Statistical Model</p>
+      <p class="s-title">GARCH Volatility + EMA Threshold Direction</p>
+    </div>
+
+    <!-- Stat pills row -->
+    <div style="position:absolute;top:98px;left:60px;display:flex;gap:10px;z-index:10;align-items:stretch;">
+      <!-- Train overall -->
+      <div style="background:#111827;border:1px solid #1E293B;border-radius:6px;padding:10px 16px;border-top:3px solid #64748B;">
+        <p style="font-size:9.5px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Train 2003–2020</p>
+        <div style="display:flex;gap:10px;">
+          <div class="metric-pill"><span class="mv" style="color:#94A3B8;">0.3613%</span><span class="ml">Avg Abs Err</span></div>
+          <div class="metric-pill"><span class="mv" style="color:#94A3B8;">0.3668%</span><span class="ml">65th Pct</span></div>
+          <div class="metric-pill"><span class="mv" style="color:#94A3B8;">0.8022%</span><span class="ml">90th Pct</span></div>
+        </div>
+      </div>
+      <!-- Arrow -->
+      <div style="display:flex;align-items:center;padding:0 4px;">
+        <i class="fa-solid fa-arrow-right" style="color:#334155;font-size:18px;"></i>
+      </div>
+      <!-- Test overall — green highlight -->
+      <div style="background:#111827;border:1px solid #1E293B;border-radius:6px;padding:10px 16px;border-top:3px solid #00A86B;">
+        <p style="font-size:9.5px;font-weight:600;color:#00A86B;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Test 2021–2023 (695 days)</p>
+        <div style="display:flex;gap:10px;">
+          <div class="metric-pill"><span class="mv" style="color:#00A86B;">0.2362%</span><span class="ml">Avg Abs Err</span></div>
+          <div class="metric-pill"><span class="mv" style="color:#00A86B;">0.1762%</span><span class="ml">Median</span></div>
+          <div class="metric-pill"><span class="mv" style="color:#47B8E0;">0.2633%</span><span class="ml">65th Pct</span></div>
+          <div class="metric-pill"><span class="mv" style="color:#F59E0B;">0.5100%</span><span class="ml">90th Pct</span></div>
+          <div class="metric-pill"><span class="mv" style="color:#EF4444;">1.3941%</span><span class="ml">Max Err</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEFT: per-year test table -->
+    <div style="position:absolute;top:188px;left:60px;width:480px;z-index:10;">
+      <div style="background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;">
+        <div style="height:4px;background:#F59E0B;"></div>
+        <div style="padding:12px 14px;">
+          <p style="font-size:11px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Walk-Forward Validation — Per Year (Test Set)</p>
+          <table class="rtable">
+            <thead>
+              <tr>
+                <th>Year</th><th>Days</th><th>HiVol</th><th>LoVol</th><th>MedVol</th><th>AvgErr%</th><th>65th%</th><th>MaxErr%</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>2021</td><td>261</td><td>9</td><td>176</td><td>76</td><td style="color:#00A86B;">0.2262</td><td>0.2632</td><td>1.2251</td></tr>
+              <tr><td>2022</td><td>260</td><td>9</td><td>160</td><td>91</td><td style="color:#F59E0B;">0.2827</td><td>0.3136</td><td>1.3941</td></tr>
+              <tr><td>2023</td><td>174</td><td>5</td><td>95</td><td>74</td><td style="color:#00A86B;">0.1819</td><td>0.1857</td><td>0.7155</td></tr>
+              <tr class="overall-row"><td>Overall</td><td>695</td><td>23</td><td>431</td><td>241</td><td style="color:#00A86B;">0.2362</td><td>0.2633</td><td>1.3941</td></tr>
+            </tbody>
+          </table>
+          <p style="font-size:10.5px;color:#64748B;margin-top:10px;">Note: AvgErr% shown as percentage of price level. INR avg abs error = 0.1674 in 2021.</p>
+        </div>
+      </div>
+
+      <!-- Train vs Test insight -->
+      <div style="margin-top:12px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;">
+        <div style="height:4px;background:#00A86B;"></div>
+        <div style="padding:12px 14px;">
+          <p style="font-size:12px;font-weight:700;color:#F1F5F9;margin-bottom:8px;"><i class="fa-solid fa-circle-check" style="color:#00A86B;margin-right:6px;"></i>Train ≈ Test Error — Key Validation Signal</p>
+          <ul class="tbullet">
+            <li class="green">Train avg abs error: <strong style="color:#F1F5F9;">0.3613%</strong> &nbsp;→&nbsp; Test avg abs error: <strong style="color:#00A86B;">0.2362%</strong></li>
+            <li class="green">Test error is <strong style="color:#F1F5F9;">lower</strong> than train — model generalises cleanly, no overfitting</li>
+            <li>The gap is explained by regime composition: 2021–2023 had more <strong style="color:#F1F5F9;">low-vol days</strong> (flat prediction = easy to be right)</li>
+            <li>Error distribution is <strong style="color:#F1F5F9;">consistent</strong> across all three test years — no sudden degradation, confirming the model captured market structure rather than just fitting historical data</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Regime note -->
+      <div style="margin-top:12px;background:#0B132B;border:1px solid #1E3A5F;border-radius:6px;padding:10px 14px;">
+        <p style="font-size:11.5px;color:#CBD5E1;"><span style="color:#F59E0B;font-weight:700;">Regime split: </span>Low vol days dominate (176 of 261 in 2021). The flat prediction rule on low-vol days keeps average error very low — a structural advantage of regime-aware modeling.</p>
+      </div>
+    </div>
+
+    <!-- RIGHT: graph -->
+    <div style="position:absolute;top:188px;left:565px;width:675px;height:490px;z-index:10;">
+      <div class="graph-container" style="height:100%;">
+        <div style="height:4px;background:#F59E0B;flex-shrink:0;"></div>
+        <div style="padding:8px 14px 6px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+          <p style="font-size:11px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:1px;">Actual vs Predicted Close — 2021 &nbsp;|&nbsp; Statistical Model</p>
+          <div style="display:flex;gap:10px;font-size:10px;color:#94A3B8;">
+            <span style="display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:12px;height:2px;background:#47B8E0;"></span>Actual</span>
+            <span style="display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:12px;height:2px;background:#F59E0B;border-top:1px dashed #F59E0B;"></span>Predicted</span>
+          </div>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:0 4px 4px;">
+          <img src="Stats_model.png" class="graph-img" style="object-position:center 20%;" alt="Statistical model 2021 prediction chart"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-dots">
+      <div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item active"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div>
+    </div>
+    <div class="slide-num">10 / 14</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 11 — Decision Tree Results
+══════════════════════════════════════════════ -->
+<div class="slide-wrapper">
+  <div class="slide-label">Slide 11 / 14</div>
+  <div class="slide">
+    <div class="top-bar" style="background:#00A86B;"></div>
+    <div class="bottom-bar"></div>
+
+    <div style="position:absolute;top:20px;left:60px;z-index:10;">
+      <p class="s-tag">Results (2/4) — Decision Tree ★ Best Model</p>
+      <p class="s-title">Decision Tree Direction + GARCH(1,1) Magnitude</p>
+    </div>
+
+    <!-- Stat pills row -->
+    <div style="position:absolute;top:98px;left:60px;display:flex;gap:10px;z-index:10;align-items:stretch;">
+      <!-- Direction accuracy — star metric -->
+      <div style="background:#111827;border:1px solid rgba(0,168,107,0.4);border-radius:6px;padding:10px 16px;border-top:3px solid #00A86B;">
+        <p style="font-size:9.5px;font-weight:600;color:#00A86B;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Direction Accuracy (2021)</p>
+        <div style="display:flex;align-items:baseline;gap:6px;">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:700;color:#00A86B;">73.56%</span>
+          <span style="font-size:11px;color:#64748B;">↑ best among all 4 models</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 4px;">
+        <i class="fa-solid fa-arrow-right" style="color:#334155;font-size:18px;"></i>
+      </div>
+      <!-- Error metrics -->
+      <div style="background:#111827;border:1px solid #1E293B;border-radius:6px;padding:10px 16px;border-top:3px solid #47B8E0;">
+        <p style="font-size:9.5px;font-weight:600;color:#47B8E0;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Test 2021–2023 (695 days)</p>
+        <div style="display:flex;gap:10px;">
+          <div class="metric-pill"><span class="mv" style="color:#00A86B;">0.2082%</span><span class="ml">Avg Abs Err</span></div>
+          <div class="metric-pill"><span class="mv" style="color:#00A86B;">0.1594%</span><span class="ml">Median</span></div>
+          <div class="metric-pill"><span class="mv" style="color:#47B8E0;">0.2307%</span><span class="ml">65th Pct</span></div>
+          <div class="metric-pill"><span class="mv" style="color:#F59E0B;">0.4542%</span><span class="ml">90th Pct</span></div>
+          <div class="metric-pill"><span class="mv" style="color:#EF4444;">1.1016%</span><span class="ml">Max Err</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEFT: per-year table -->
+    <div style="position:absolute;top:188px;left:60px;width:480px;z-index:10;">
+      <div style="background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;">
+        <div style="height:4px;background:#00A86B;"></div>
+        <div style="padding:12px 14px;">
+          <p style="font-size:11px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Test Set — Per Year (Out-of-Sample)</p>
+          <table class="rtable">
+            <thead>
+              <tr><th>Year</th><th>Days</th><th>DirAcc%</th><th>AvgErr INR</th><th>AvgErr%</th><th>65th%</th><th>MaxErr%</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>2021</td><td>261</td><td style="color:#00A86B;font-weight:700;">73.56</td><td>0.1574</td><td style="color:#00A86B;">0.2127</td><td>0.2286</td><td>1.0382</td></tr>
+              <tr><td>2022</td><td>260</td><td style="color:#00A86B;font-weight:700;">76.92</td><td>0.1873</td><td style="color:#00A86B;">0.2375</td><td>0.2756</td><td>1.1016</td></tr>
+              <tr><td>2023</td><td>174</td><td style="color:#00A86B;font-weight:700;">73.56</td><td>0.1296</td><td style="color:#00A86B;">0.1576</td><td>0.1657</td><td>0.6418</td></tr>
+              <tr class="overall-row"><td>Overall</td><td>695</td><td style="color:#00A86B;">74.68 avg</td><td>0.1581</td><td style="color:#00A86B;">0.2082</td><td>0.2307</td><td>1.1016</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Why best -->
+      <div style="margin-top:12px;background:#111827;border:1px solid rgba(0,168,107,0.3);border-radius:6px;overflow:hidden;">
+        <div style="height:4px;background:#00A86B;"></div>
+        <div style="padding:12px 14px;">
+          <p style="font-size:12px;font-weight:700;color:#F1F5F9;margin-bottom:8px;"><i class="fa-solid fa-trophy" style="color:#F59E0B;margin-right:6px;"></i>Why Decision Tree Wins</p>
+          <ul class="tbullet">
+            <li class="green">Highest directional accuracy: <strong style="color:#F1F5F9;">73–77%</strong> across all test years — well above the 51% threshold for profitable trading</li>
+            <li class="green">Lowest avg abs error of all 4 models: <strong style="color:#F1F5F9;">0.2082%</strong> overall</li>
+            <li>Nonlinear splits naturally learn <strong style="color:#F1F5F9;">regime-conditional rules</strong> without requiring manual threshold tuning</li>
+            <li>Consistent accuracy across 2021, 2022, 2023 — no regime-specific degradation, confirming robust generalisation</li>
+            <li class="amber">Max error capped at <strong style="color:#F1F5F9;">1.10%</strong> — lower than statistical (1.39%) and KNN (1.51%)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="margin-top:10px;background:#0B132B;border:1px solid #1E3A5F;border-radius:6px;padding:10px 14px;">
+        <p style="font-size:11px;color:#CBD5E1;"><span style="color:#00A86B;font-weight:700;">💡 </span>The tree is chosen as the <strong style="color:#F1F5F9;">final production model</strong> — directional accuracy above 70% translates directly to a positive-expectancy trading signal after transaction costs.</p>
+      </div>
+    </div>
+
+    <!-- RIGHT: graph -->
+    <div style="position:absolute;top:188px;left:565px;width:675px;height:490px;z-index:10;">
+      <div class="graph-container" style="height:100%;">
+        <div style="height:4px;background:#00A86B;flex-shrink:0;"></div>
+        <div style="padding:8px 14px 6px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+          <p style="font-size:11px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:1px;">Actual vs Predicted Close — 2021 &nbsp;|&nbsp; Decision Tree + GARCH</p>
+          <span style="font-size:10.5px;font-family:'JetBrains Mono',monospace;color:#00A86B;background:rgba(0,168,107,0.1);border:1px solid rgba(0,168,107,0.3);padding:2px 8px;border-radius:4px;">DA: 73.56%</span>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:0 4px 4px;">
+          <img src="decision_tree.png" class="graph-img" style="object-position:center 15%;" alt="Decision tree 2021 prediction chart"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-dots">
+      <div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item active"></div><div class="dot-item"></div><div class="dot-item"></div>
+    </div>
+    <div class="slide-num">11 / 14</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 12 — KNN Results
+══════════════════════════════════════════════ -->
+<div class="slide-wrapper">
+  <div class="slide-label">Slide 12 / 14</div>
+  <div class="slide">
+    <div class="top-bar" style="background:#47B8E0;"></div>
+    <div class="bottom-bar"></div>
+
+    <div style="position:absolute;top:20px;left:60px;z-index:10;">
+      <p class="s-tag">Results (3/4) — KNN</p>
+      <p class="s-title">K-Nearest Neighbours Direction + GARCH(1,1) Magnitude</p>
+    </div>
+
+    <!-- Stat pills row -->
+    <div style="position:absolute;top:98px;left:60px;display:flex;gap:10px;z-index:10;align-items:stretch;">
+      <!-- Direction warning -->
+      <div style="background:#111827;border:1px solid rgba(239,68,68,0.35);border-radius:6px;padding:10px 16px;border-top:3px solid #EF4444;">
+        <p style="font-size:9.5px;font-weight:600;color:#EF4444;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Direction Accuracy — Declining</p>
+        <div style="display:flex;gap:12px;align-items:baseline;">
+          <div style="text-align:center;"><span style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:#F59E0B;">55.56%</span><br><span style="font-size:9px;color:#64748B;">2021</span></div>
+          <i class="fa-solid fa-arrow-right" style="color:#EF4444;font-size:12px;"></i>
+          <div style="text-align:center;"><span style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:#F59E0B;">50.77%</span><br><span style="font-size:9px;color:#64748B;">2022</span></div>
+          <i class="fa-solid fa-arrow-right" style="color:#EF4444;font-size:12px;"></i>
+          <div style="text-align:center;"><span style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:#EF4444;">44.25%</span><br><span style="font-size:9px;color:#64748B;">2023</span></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 4px;">
+        <i class="fa-solid fa-arrow-right" style="color:#334155;font-size:18px;"></i>
+      </div>
+      <!-- Error metrics -->
+      <div style="background:#111827;border:1px solid #1E293B;border-radius:6px;padding:10px 16px;border-top:3px solid #47B8E0;">
+        <p style="font-size:9.5px;font-weight:600;color:#47B8E0;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Test 2021–2023 (695 days)</p>
+        <div style="display:flex;gap:10px;">
+          <div class="metric-pill"><span class="mv" style="color:#47B8E0;">0.2357%</span><span class="ml">Avg Abs Err</span></div>
+          <div class="metric-pill"><span class="mv" style="color:#47B8E0;">0.1784%</span><span class="ml">Median</span></div>
+          <div class="metric-pill"><span class="mv" style="color:#F59E0B;">0.2623%</span><span class="ml">65th Pct</span></div>
+          <div class="metric-pill"><span class="mv" style="color:#F59E0B;">0.4977%</span><span class="ml">90th Pct</span></div>
+          <div class="metric-pill"><span class="mv" style="color:#EF4444;">1.5129%</span><span class="ml">Max Err</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEFT: table + analysis -->
+    <div style="position:absolute;top:188px;left:60px;width:480px;z-index:10;">
+      <div style="background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;">
+        <div style="height:4px;background:#47B8E0;"></div>
+        <div style="padding:12px 14px;">
+          <p style="font-size:11px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Test Set — Per Year (Out-of-Sample)</p>
+          <table class="rtable">
+            <thead>
+              <tr><th>Year</th><th>Days</th><th>DirAcc%</th><th>AvgErr INR</th><th>AvgErr%</th><th>65th%</th><th>MaxErr%</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>2021</td><td>261</td><td style="color:#F59E0B;">55.56</td><td>0.1682</td><td>0.2274</td><td>0.2619</td><td>1.0382</td></tr>
+              <tr><td>2022</td><td>260</td><td style="color:#F59E0B;">50.77</td><td>0.2179</td><td>0.2766</td><td>0.2960</td><td style="color:#EF4444;">1.5129</td></tr>
+              <tr><td>2023</td><td>174</td><td style="color:#EF4444;font-weight:700;">44.25</td><td>0.1540</td><td>0.1872</td><td>0.2033</td><td>0.9325</td></tr>
+              <tr class="overall-row"><td>Overall</td><td>695</td><td style="color:#F59E0B;">50.19 avg</td><td>0.1800</td><td>0.2357</td><td>0.2623</td><td style="color:#EF4444;">1.5129</td></tr>
+            </tbody>
+          </table>
+          <div style="margin-top:8px;background:#0B132B;border-radius:4px;padding:7px 10px;display:flex;gap:16px;">
+            <span style="font-size:10.5px;color:#94A3B8;">Train avg err: <span style="color:#CBD5E1;font-family:'JetBrains Mono',monospace;">0.3479%</span></span>
+            <span style="font-size:10.5px;color:#94A3B8;">Test avg err: <span style="color:#CBD5E1;font-family:'JetBrains Mono',monospace;">0.2357%</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analysis -->
+      <div style="margin-top:12px;background:#111827;border:1px solid rgba(239,68,68,0.25);border-radius:6px;overflow:hidden;">
+        <div style="height:4px;background:#EF4444;"></div>
+        <div style="padding:12px 14px;">
+          <p style="font-size:12px;font-weight:700;color:#F1F5F9;margin-bottom:8px;"><i class="fa-solid fa-triangle-exclamation" style="color:#EF4444;margin-right:6px;"></i>Why KNN Underperforms</p>
+          <ul class="tbullet">
+            <li class="red">Directional accuracy <strong style="color:#F1F5F9;">degrades year-on-year</strong>: 55.56% → 50.77% → 44.25% — drops below random by 2023</li>
+            <li>KNN assumes similar past market states predict future direction, but <strong style="color:#F1F5F9;">post-COVID regimes</strong> have no close historical analogs in the 2003–2020 training data</li>
+            <li class="red">Highest max error of all models: <strong style="color:#F1F5F9;">1.51%</strong> — worst tail behaviour</li>
+            <li>Error rate tracks closely with statistical model, confirming that <strong style="color:#F1F5F9;">GARCH magnitude is sound</strong> — the failure is purely in the direction stage</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="margin-top:10px;background:#0B132B;border:1px solid #1E3A5F;border-radius:6px;padding:10px 14px;">
+        <p style="font-size:11px;color:#CBD5E1;"><span style="color:#47B8E0;font-weight:700;">Conclusion: </span>KNN is a viable <strong style="color:#F1F5F9;">pattern-matching baseline</strong> but lacks the structural feature interaction learning that lets Decision Tree adapt to new regimes.</p>
+      </div>
+    </div>
+
+    <!-- RIGHT: graph -->
+    <div style="position:absolute;top:188px;left:565px;width:675px;height:490px;z-index:10;">
+      <div class="graph-container" style="height:100%;">
+        <div style="height:4px;background:#47B8E0;flex-shrink:0;"></div>
+        <div style="padding:8px 14px 6px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+          <p style="font-size:11px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:1px;">Actual vs Predicted Close — 2021 &nbsp;|&nbsp; KNN + GARCH</p>
+          <span style="font-size:10.5px;font-family:'JetBrains Mono',monospace;color:#EF4444;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);padding:2px 8px;border-radius:4px;">DA: 55.56%</span>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:0 4px 4px;">
+          <img src="knn.png" class="graph-img" style="object-position:center 15%;" alt="KNN 2021 prediction chart"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-dots">
+      <div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item active"></div><div class="dot-item"></div>
+    </div>
+    <div class="slide-num">12 / 14</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 13 — LDA + Ridge Results
+══════════════════════════════════════════════ -->
+<div class="slide-wrapper">
+  <div class="slide-label">Slide 13 / 14</div>
+  <div class="slide">
+    <div class="top-bar" style="background:linear-gradient(90deg,#47B8E0,#F59E0B);"></div>
+    <div class="bottom-bar"></div>
+
+    <div style="position:absolute;top:20px;left:60px;z-index:10;">
+      <p class="s-tag">Results (4/4) — LDA + Ridge Two-Stage</p>
+      <p class="s-title">LDA Direction + Polynomial Ridge Regression Magnitude</p>
+    </div>
+
+    <!-- Stat pills row -->
+    <div style="position:absolute;top:98px;left:60px;display:flex;gap:10px;z-index:10;align-items:stretch;">
+      <!-- Error — best in class -->
+      <div style="background:#111827;border:1px solid rgba(71,184,224,0.35);border-radius:6px;padding:10px 16px;border-top:3px solid #47B8E0;">
+        <p style="font-size:9.5px;font-weight:600;color:#47B8E0;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Lowest Abs Error — 2021</p>
+        <div style="display:flex;gap:10px;align-items:baseline;">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:#47B8E0;">0.187%</span>
+          <span style="font-size:11px;color:#64748B;">avg abs err · best of all models</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 4px;">
+        <i class="fa-solid fa-arrow-right" style="color:#334155;font-size:18px;"></i>
+      </div>
+      <!-- But direction accuracy drops -->
+      <div style="background:#111827;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:10px 16px;border-top:3px solid #EF4444;">
+        <p style="font-size:9.5px;font-weight:600;color:#EF4444;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Walk-Forward (2021–2023) — Dir Acc Collapses</p>
+        <div style="display:flex;gap:10px;">
+          <div class="metric-pill"><span class="mv" style="color:#F59E0B;">50.57%</span><span class="ml">2021 DA</span></div>
+          <div class="metric-pill"><span class="mv" style="color:#F59E0B;">54.23%</span><span class="ml">2022 DA</span></div>
+          <div class="metric-pill"><span class="mv" style="color:#EF4444;">49.43%</span><span class="ml">2023 DA</span></div>
+          <div class="metric-pill"><span class="mv" style="color:#EF4444;">51.65%</span><span class="ml">Overall DA</span></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 4px;">
+        <i class="fa-solid fa-arrow-right" style="color:#334155;font-size:18px;"></i>
+      </div>
+      <!-- Walk forward error -->
+      <div style="background:#111827;border:1px solid #1E293B;border-radius:6px;padding:10px 16px;border-top:3px solid #F59E0B;">
+        <p style="font-size:9.5px;font-weight:600;color:#F59E0B;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Walk-Forward Error (695 days)</p>
+        <div style="display:flex;gap:10px;">
+          <div class="metric-pill"><span class="mv" style="color:#EF4444;">0.3456%</span><span class="ml">Avg Abs Err</span></div>
+          <div class="metric-pill"><span class="mv" style="color:#EF4444;">0.2892%</span><span class="ml">Median</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEFT: table + analysis -->
+    <div style="position:absolute;top:188px;left:60px;width:480px;z-index:10;">
+      <div style="background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;">
+        <div style="height:4px;background:linear-gradient(90deg,#47B8E0,#F59E0B);"></div>
+        <div style="padding:12px 14px;">
+          <p style="font-size:11px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Walk-Forward Validation — 2021–2023</p>
+          <p style="font-size:10.5px;color:#64748B;margin-bottom:8px;">Note: 2021 plot uses single-window Poly Ridge; walk-forward uses LDA direction + Ridge magnitude</p>
+          <table class="rtable">
+            <thead>
+              <tr><th>Year</th><th>Days</th><th>DirAcc%</th><th>AvgErr INR</th><th>AvgErr%</th><th>65th%</th><th>MaxErr%</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>2021</td><td>261</td><td style="color:#F59E0B;">50.57</td><td>0.2621</td><td>0.3542</td><td>0.4179</td><td>1.5528</td></tr>
+              <tr><td>2022</td><td>260</td><td style="color:#F59E0B;">54.23</td><td>0.2874</td><td>0.3663</td><td>0.3858</td><td>1.5622</td></tr>
+              <tr><td>2023</td><td>174</td><td style="color:#EF4444;font-weight:700;">49.43</td><td>0.2481</td><td>0.3018</td><td>0.3287</td><td>1.0510</td></tr>
+              <tr class="overall-row"><td>Overall</td><td>695</td><td style="color:#EF4444;">51.65</td><td>0.2726</td><td>0.3456</td><td>0.3956</td><td style="color:#EF4444;">1.5622</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Why it struggles -->
+      <div style="margin-top:12px;background:#111827;border:1px solid #1E293B;border-radius:6px;overflow:hidden;">
+        <div style="height:4px;background:linear-gradient(90deg,#47B8E0,#F59E0B);"></div>
+        <div style="padding:12px 14px;">
+          <p style="font-size:12px;font-weight:700;color:#F1F5F9;margin-bottom:8px;"><i class="fa-solid fa-code-branch" style="color:#47B8E0;margin-right:6px;"></i>Two-Stage Split — What Works vs What Fails</p>
+          <ul class="tbullet">
+            <li class="green">Polynomial Ridge produces <strong style="color:#F1F5F9;">lowest raw price error</strong> in 2021 (0.187% avg abs) — magnitude modeling is excellent</li>
+            <li class="green">Stage split concept is sound: volatility features <strong style="color:#F1F5F9;">do predict move size well</strong></li>
+            <li class="red">LDA direction stage fails in walk-forward: <strong style="color:#F1F5F9;">51.65% overall</strong> — barely above random chance</li>
+            <li class="red">Linear class boundary cannot capture the <strong style="color:#F1F5F9;">nonlinear regime dynamics</strong> that the Decision Tree handles via splits</li>
+            <li class="amber">Walk-forward avg error <strong style="color:#F1F5F9;">0.3456%</strong> — highest of all 4 models due to direction errors compounding magnitude predictions</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="margin-top:10px;background:#0B132B;border:1px solid #1E3A5F;border-radius:6px;padding:10px 14px;">
+        <p style="font-size:11px;color:#CBD5E1;"><span style="color:#47B8E0;font-weight:700;">Takeaway: </span>The two-stage architecture is conceptually strong — replacing LDA with a <strong style="color:#F1F5F9;">nonlinear direction classifier</strong> (i.e. Decision Tree) while keeping the Ridge magnitude stage could be a productive next iteration.</p>
+      </div>
+    </div>
+
+    <!-- RIGHT: graph -->
+    <div style="position:absolute;top:188px;left:565px;width:675px;height:490px;z-index:10;">
+      <div class="graph-container" style="height:100%;">
+        <div style="height:4px;background:linear-gradient(90deg,#47B8E0,#F59E0B);flex-shrink:0;"></div>
+        <div style="padding:8px 14px 6px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+          <p style="font-size:11px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:1px;">Actual vs Predicted — 2021 &nbsp;|&nbsp; Poly Ridge CV (single window)</p>
+          <div style="display:flex;gap:6px;">
+            <span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:#47B8E0;background:rgba(71,184,224,0.1);border:1px solid rgba(71,184,224,0.25);padding:2px 7px;border-radius:4px;">Err: 0.187%</span>
+            <span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:#F59E0B;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);padding:2px 7px;border-radius:4px;">DA: 72.8%</span>
+          </div>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:0 4px 4px;">
+          <img src="polynomial_reg.png" class="graph-img" style="object-position:center 15%;" alt="LDA Ridge 2021 prediction chart"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-dots">
+      <div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div><div class="dot-item active"></div>
+    </div>
+    <div class="slide-num">13 / 14</div>
+  </div>
+</div>
+
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<title>USD/INR Slide 14 — Contributions</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #060d1f;
+    font-family: 'Inter', sans-serif;
+    color: #E2E8F0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+    padding: 40px 20px;
+  }
+  .slide-wrapper { width: 1280px; position: relative; }
+  .slide-label { font-size: 12px; color: #475569; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; font-family: 'JetBrains Mono', monospace; }
+  .slide { position: relative; width: 1280px; height: 720px; overflow: hidden; background-color: #0B132B; box-shadow: 0 25px 80px rgba(0,0,0,0.6); }
+
+  .top-bar { position: absolute; top: 0; left: 0; width: 100%; height: 6px; z-index: 5; }
+  .bottom-bar { position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, #00A86B 0%, #47B8E0 50%, transparent 100%); opacity: 0.4; }
+  .nav-dots { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 10; }
+  .dot-item { width: 6px; height: 6px; border-radius: 50%; background: #1E3A5F; }
+  .dot-item.active { background: #00A86B; width: 20px; border-radius: 3px; }
+  .slide-num { position: absolute; bottom: 18px; right: 30px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #334155; z-index: 10; }
+
+  .s-tag { font-size: 11px; color: #47B8E0; text-transform: uppercase; letter-spacing: 2px; font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+  .s-title { font-size: 26px; font-weight: 700; color: #F1F5F9; line-height: 1.2; margin-top: 4px; }
+
+  ul.tbullet { list-style: none; margin: 0; padding: 0; }
+  ul.tbullet li { font-size: 12px; color: #CBD5E1; margin-bottom: 5px; padding-left: 16px; position: relative; line-height: 1.45; }
+  ul.tbullet li::before { content: '▪'; position: absolute; left: 0; color: #47B8E0; font-size: 10px; top: 2px; }
+  ul.tbullet li.green::before { color: #00A86B; }
+
+  .name-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #0B132B;
+    border: 1px solid #1E293B;
+    border-radius: 5px;
+    padding: 5px 12px;
+    margin-bottom: 5px;
+  }
+  .name-text { font-size: 13px; font-weight: 700; color: #F1F5F9; }
+  .roll-text { font-size: 10.5px; font-family: 'JetBrains Mono', monospace; color: #64748B; }
+
+  .contrib-tag {
+    display: inline-block;
+    font-size: 9.5px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-bottom: 10px;
+  }
+  .tag-green { background: rgba(0,168,107,0.15); color: #00A86B; border: 1px solid rgba(0,168,107,0.35); }
+  .tag-blue  { background: rgba(71,184,224,0.12); color: #47B8E0; border: 1px solid rgba(71,184,224,0.3); }
+</style>
+</head>
+<body>
+
+<div class="slide-wrapper">
+  <div class="slide-label">Slide 14 / 14</div>
+  <div class="slide">
+
+    <div class="top-bar" style="background: linear-gradient(90deg, #00A86B, #47B8E0);"></div>
+    <div class="bottom-bar"></div>
+
+    <!-- Header -->
+    <div style="position:absolute; top:20px; left:60px; z-index:10;">
+      <p class="s-tag">Project Contributions</p>
+      <p class="s-title">Team — USD/INR Quant Strategy</p>
+    </div>
+
+    <!-- ── LEFT CARD — Kriti & Vanshika ───────────────────── -->
+    <div style="position:absolute; top:100px; left:60px; width:640px; z-index:10;
+                background:#111827; border:1px solid #1E293B; border-radius:8px; overflow:hidden;">
+
+      <div style="height:5px; background:#00A86B;"></div>
+
+      <div style="padding:18px 22px;">
+
+        <!-- Names row -->
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+          <div>
+            <div class="name-badge">
+              <i class="fa-solid fa-user-circle" style="color:#00A86B; font-size:15px;"></i>
+              <span class="name-text">Kriti Agarwal</span>
+              <span class="roll-text">B24EE1037</span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; color:#334155; font-size:13px;">&amp;</div>
+          <div>
+            <div class="name-badge">
+              <i class="fa-solid fa-user-circle" style="color:#00A86B; font-size:15px;"></i>
+              <span class="name-text">Vanshika Mehta</span>
+              <span class="roll-text">B24EE1084</span>
+            </div>
+          </div>
+        </div>
+
+        <span class="contrib-tag tag-green">Feature Engineering &amp; Statistical Model</span>
+
+        <!-- Two-column list -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 20px;">
+          <ul class="tbullet">
+            <li class="green">GARCH(1,1) volatility modeling — grid search estimation &amp; persistence analysis</li>
+            <li class="green">Rolling std regime classification — std5 / std14 / std25 ordering logic</li>
+            <li class="green">EMA threshold direction model — gamma / beta optimisation via differential evolution</li>
+            <li class="green">Full feature engineering pipeline — all 10 features used across all models</li>
+            <li class="green">Statistical model prediction formula — high / medium / low regime-based synthesis</li>
+          </ul>
+          <ul class="tbullet">
+            <li class="green">Walk-forward validation framework — 7-day refit, rolling 1000-day window design</li>
+            <li class="green">EDA &amp; preprocessing — stationarity handling, holiday gaps, chronological splitting</li>
+            <li class="green">Train vs test error analysis — validating generalisation over overfitting</li>
+            <li class="green">HTML output pipeline — per-year plots, index pages, error visualisations</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── RIGHT CARD — Tanishka & Nityan ─────────────────── -->
+    <div style="position:absolute; top:100px; left:730px; width:510px; z-index:10;
+                background:#111827; border:1px solid #1E293B; border-radius:8px; overflow:hidden;">
+
+      <div style="height:5px; background:#47B8E0;"></div>
+
+      <div style="padding:18px 22px;">
+
+        <!-- Names row -->
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+          <div>
+            <div class="name-badge">
+              <i class="fa-solid fa-user-circle" style="color:#47B8E0; font-size:15px;"></i>
+              <span class="name-text">Tanishka Trivedi</span>
+              <span class="roll-text">B24EE1080</span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; color:#334155; font-size:13px;">&amp;</div>
+          <div>
+            <div class="name-badge">
+              <i class="fa-solid fa-user-circle" style="color:#47B8E0; font-size:15px;"></i>
+              <span class="name-text">Vempati Nityan</span>
+              <span class="roll-text">B24EE1087</span>
+            </div>
+          </div>
+        </div>
+
+        <span class="contrib-tag tag-blue">ML Models &amp; Evaluation</span>
+
+        <ul class="tbullet">
+          <li>Decision Tree classifier — depth tuning via 5-fold CV, feature importance extraction &amp; interpretation</li>
+          <li>KNN direction model — k search across {3,5,7,9,11,15,21,31}, standardisation pipeline, walk-forward integration</li>
+          <li>LDA + Ridge two-stage architecture — direction / magnitude feature split design, RidgeCV alpha selection</li>
+          <li>Out-of-sample test pipeline for all ML models — zero-lookahead 2021–2023 evaluation</li>
+          <li>Model comparison &amp; results synthesis — directional accuracy, error metrics, and failure mode analysis across all 4 models</li>
+        </ul>
+
+      </div>
+    </div>
+
+    <!-- ── Unified pipeline note ───────────────────────────── -->
+    <div style="position:absolute; bottom:52px; left:60px; width:1160px; z-index:10;
+                background:#0B132B; border:1px solid #1E3A5F; border-radius:6px; overflow:hidden;">
+      <div style="height:4px; background:linear-gradient(90deg,#00A86B,#47B8E0);"></div>
+      <div style="padding:12px 20px; display:flex; align-items:center; gap:14px;">
+        <i class="fa-solid fa-link" style="color:#47B8E0; font-size:16px; flex-shrink:0;"></i>
+        <p style="font-size:12.5px; color:#CBD5E1; line-height:1.5;">
+          <span style="color:#00A86B; font-weight:700;">Unified Foundation: </span>
+          All four models share a common GARCH + regime + direction pipeline built collaboratively.
+          The feature engineering and statistical baseline developed by Kriti &amp; Vanshika form the
+          foundation on which all ML models by Tanishka &amp; Nityan are built and evaluated.
+        </p>
+      </div>
+    </div>
+
+    <!-- Nav dots — 14 slides -->
+    <div class="nav-dots">
+      <div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div>
+      <div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div>
+      <div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div>
+      <div class="dot-item"></div><div class="dot-item"></div><div class="dot-item"></div>
+      <div class="dot-item"></div><div class="dot-item active"></div>
+    </div>
+    <div class="slide-num">14 / 14</div>
+
+  </div>
+</div>
+
+</body>
+</html>

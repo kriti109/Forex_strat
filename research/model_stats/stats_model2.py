@@ -1,27 +1,42 @@
 """
-USD/INR Next-Day Close Price Predictor  —  Walk-Forward Edition
-===============================================================
+USD/INR Next-Day Close Price Predictor  —  Walk-Forward Edition (Fixed)
+=======================================================================
+Changes from original:
+  1. GARCH parameters are now fitted on 2003-2020 ONLY (not the full 2003-2023
+     series). This eliminates the forward bias in GARCH estimation.
+  2. For the 2021-2023 test period, GARCH parameters are updated every 7
+     trading days using a walk-forward expanding window (all data strictly
+     before the current prediction day). Identical approach to the Decision
+     Tree edition.
+  3. All other logic (EMA features, gamma/beta walk-forward, vol regime,
+     prediction formula) is unchanged and was already forward-bias-free.
+
+Remaining known issues (not forward bias, but worth noting):
+  - gamma/beta are tuned via differential_evolution on the full 2003-2020
+    training set. The optimiser sees the entire train set at once, which is
+    standard and acceptable for an initial fit.
+  - Vol regime rolling std (std5/std14/std25) is computed on the combined
+    series. Since these are purely backward-looking rolling windows, this is
+    causal and correct.
+
 Logic:
-  - Fit GARCH(1,1) -> conditional volatility (sigma_t, in return units)
-  - Rolling std of last 5, 14, 25 days (price std, for regime detection)
-  - Direction from optimised EMA5-EMA20 threshold model (beta/gamma)
-
-  Regime classification (using rolling std):
-    HIGH vol  : std5 > std14 > std25
-    LOW  vol  : std5 < std14 < std25
-    MEDIUM    : everything else
-
-  Prediction for day t+1:
-    HIGH   -> close_t + direction * garch_vol_t * close_t
-    LOW    -> close_t  (same price, no change)
-    MEDIUM -> close_t + direction * 0.5 * garch_vol_t * close_t
-
-  Walk-forward gamma/beta update:
-    - Initial gamma/beta learned on 2003-2020 (full history)
-    - From 2021 onwards, predict day by day
-    - Every 7 trading days, re-run optimiser on ALL data seen so far
-      (2003-2020 + days elapsed in 2021-2023) -> updated gamma/beta
-    - On day T, only data up to T-1 is used. Zero lookahead.
+  - Fit GARCH(1,1) on 2003-2020 -> initial parameters (omega, alpha, beta)
+  - Apply those parameters to get conditional vol for 2003-2020 train set
+  - Walk-forward GARCH for 2021-2023:
+      Every 7 trading days, refit GARCH on all data seen so far
+      (2003-2020 + elapsed test days, strictly before today).
+      Apply current parameters via full recursion from t=0 to get today's vol.
+  - Direction from optimised EMA5-EMA20 threshold model (gamma/beta)
+  - Regime classification (using rolling std):
+      HIGH vol  : std5 > std14 > std25
+      LOW  vol  : std5 < std14 < std25
+      MEDIUM    : everything else
+  - Prediction for day t+1:
+      HIGH   -> close_t + direction * garch_vol_t * close_t
+      LOW    -> close_t  (same price, no change)
+      MEDIUM -> close_t + direction * 0.5 * garch_vol_t * close_t
+  - Walk-forward gamma/beta update:
+      Every 7 trading days, re-run optimiser on all data strictly before today.
 
 Outputs:
   - usd_inr_pred_plots/index.html             (train 2003-2020 summary + links)
@@ -29,7 +44,7 @@ Outputs:
   - usd_inr_pred_plots/validation_index.html  (2021-2023 walk-forward summary + links)
 
 Usage:
-  python predict_usd_inr.py [path_to_csv] [output_folder]
+  python predict_usd_inr_fixed.py [path_to_csv] [output_folder]
   Default csv : USD_INR_Exchange.csv
   Default out : usd_inr_pred_plots/
 """
@@ -42,11 +57,12 @@ import sys
 from scipy.optimize import differential_evolution
 
 
-# ------------------------------------------------------------------------------
-# 1. GARCH(1,1)
-# ------------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
+# 1. GARCH(1,1) — separated into fit (returns params) and apply (returns vol)
+# ─────────────────────────────────────────────────────────────────────────────
 
 def _garch_variance(r, omega, alpha, beta):
+    """Run GARCH(1,1) variance recursion. Pure math — no lookahead possible."""
     n = len(r)
     h = np.full(n, max(float(np.var(r)), 1e-10))
     for t in range(1, n):
@@ -54,8 +70,15 @@ def _garch_variance(r, omega, alpha, beta):
     return h
 
 
-def fit_garch11(returns):
-    """Return conditional std-dev series (in return fraction units)."""
+def fit_garch11(returns, label=''):
+    """
+    Fit GARCH(1,1) parameters on `returns` using grid-search MLE.
+    Returns (omega, alpha, beta) — the raw parameters only.
+    Does NOT return a vol series; call apply_garch_vol() separately.
+
+    Separating fit from apply is the key fix: the caller decides which
+    data to fit on (train-only) and which data to apply to (any window).
+    """
     r  = returns.fillna(0).values
     uv = max(float(np.var(r)), 1e-10)
     best_nll, best_params = np.inf, None
@@ -77,15 +100,92 @@ def fit_garch11(returns):
         best_params = (uv * 0.05, 0.10, 0.80)
 
     omega, alpha, beta = best_params
-    h = _garch_variance(r, omega, alpha, beta)
-    print(f"  GARCH(1,1): omega={omega:.2e}  alpha={alpha:.4f}  beta={beta:.4f}"
+    tag = f"  [{label}] " if label else "  "
+    print(f"{tag}GARCH(1,1): omega={omega:.2e}  alpha={alpha:.4f}  beta={beta:.4f}"
           f"  persistence={alpha+beta:.4f}")
+    return omega, alpha, beta
+
+
+def apply_garch_vol(returns, omega, alpha, beta):
+    """
+    Given fixed GARCH parameters, run the variance recursion on `returns`
+    and return the conditional std-dev series (same length as returns).
+    """
+    r = returns.fillna(0).values
+    h = _garch_variance(r, omega, alpha, beta)
     return np.sqrt(np.maximum(h, 1e-12))
 
 
-# ------------------------------------------------------------------------------
-# 2. Volatility regime
-# ------------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
+# 2. Walk-forward GARCH vol for the test period (2021-2023)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def build_walkforward_garch_vol(full_raw, df_test,
+                                 init_omega, init_alpha, init_beta,
+                                 update_every=7):
+    """
+    Produce a conditional vol Series for every day in df_test with zero
+    lookahead.
+
+    For each test day i:
+      - If i > 0 and i % update_every == 0:
+          Refit GARCH parameters on ALL returns strictly before today
+          (expanding window = 2003-2020 train + test days elapsed so far).
+          Uses full_raw.index < day, so today's return is NEVER seen.
+      - Run the full GARCH recursion from t=0 on all history up to and
+          including today (full_raw.index <= day) with current parameters,
+          and read off the last value as today's conditional vol.
+          Reading today's vol to predict tomorrow is causal — vol clustering
+          means today's variance is a valid predictor of tomorrow's.
+
+    Parameters
+    ----------
+    full_raw : DataFrame
+        The complete price series (2003-2023), used only for building the
+        expanding return history.
+    df_test : DataFrame
+        Test rows (2021-2023). Index must be a subset of full_raw.index.
+    init_omega, init_alpha, init_beta : float
+        GARCH parameters pre-fitted on 2003-2020 train data.
+    update_every : int
+        How many test days to wait between parameter refits.
+
+    Returns
+    -------
+    pd.Series aligned to df_test.index
+    """
+    val_idx = df_test.index
+    n_val   = len(val_idx)
+
+    omega, alpha, beta = init_omega, init_alpha, init_beta
+    garch_vol_list = []
+
+    print(f"\n  Walk-forward GARCH: {n_val} test days  |  refit every {update_every} days")
+    print(f"  Initial params: omega={omega:.2e}  alpha={alpha:.4f}  beta={beta:.4f}")
+
+    for i in range(n_val):
+        day = val_idx[i]
+
+        # --- Refit: use ALL history strictly before today -------------------
+        if i > 0 and i % update_every == 0:
+            history_rets = full_raw.loc[full_raw.index < day, 'Close'].pct_change()
+            if len(history_rets.dropna()) > 50:
+                omega, alpha, beta = fit_garch11(
+                    history_rets,
+                    label=f"refit @ {day.date()}  n={len(history_rets)}"
+                )
+
+        # --- Apply: run recursion on all history up to and including today --
+        history_rets = full_raw.loc[full_raw.index <= day, 'Close'].pct_change()
+        vol_series   = apply_garch_vol(history_rets, omega, alpha, beta)
+        garch_vol_list.append(vol_series[-1])   # today's conditional vol
+
+    return pd.Series(garch_vol_list, index=val_idx, name='garch_vol')
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 3. Volatility regime (causal rolling std — no lookahead)
+# ─────────────────────────────────────────────────────────────────────────────
 
 def classify_vol_regime(df):
     c = df['Close']
@@ -102,9 +202,9 @@ def classify_vol_regime(df):
     return df
 
 
-# ------------------------------------------------------------------------------
-# 3. Direction model  (EMA5 - EMA20 threshold, optimised via diff-evolution)
-# ------------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
+# 4. Direction model  (EMA5 - EMA20 threshold, optimised via diff-evolution)
+# ─────────────────────────────────────────────────────────────────────────────
 
 def compute_ema_feature(df):
     c = df['Close']
@@ -154,9 +254,9 @@ def learn_thresholds(df, label=''):
     return gamma, beta
 
 
-# ------------------------------------------------------------------------------
-# 4. Predictions
-# ------------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
+# 5. Predictions
+# ─────────────────────────────────────────────────────────────────────────────
 
 def build_train_predictions(df, beta, gamma):
     """Standard next-day prediction for the train set (fixed thresholds)."""
@@ -191,11 +291,10 @@ def build_walkforward_predictions(df_full, df_val, initial_gamma, initial_beta,
 
     On day i (val index):
       - If i > 0 and i % update_every == 0:
-          Re-run optimiser on ALL of df_full strictly before today
+          Re-run gamma/beta optimiser on ALL of df_full strictly before today
           (expanding window — 2003-2020 + val days seen so far).
-          close_delta at row k needs close at k+1, so the last row
-          of history naturally has NaN close_delta and is excluded
-          by learn_thresholds automatically.
+          close_delta at row k needs close at k+1, so the last row of history
+          naturally has NaN close_delta and is excluded by learn_thresholds.
       - Predict close for day i+1 using current gamma/beta and today's features.
     Zero lookahead guaranteed.
     """
@@ -207,7 +306,7 @@ def build_walkforward_predictions(df_full, df_val, initial_gamma, initial_beta,
     gamma_list = []
     beta_list  = []
 
-    print(f"\n  Walk-forward: {n_val} days  |  update every {update_every} days")
+    print(f"\n  Walk-forward gamma/beta: {n_val} days  |  update every {update_every} days")
     print(f"  Initial gamma={gamma:.4f}  beta={beta:.4f}")
 
     for i in range(n_val - 1):   # last row: no next_actual
@@ -219,7 +318,7 @@ def build_walkforward_predictions(df_full, df_val, initial_gamma, initial_beta,
             if len(history) > 50:
                 gamma, beta = learn_thresholds(
                     history,
-                    label=f"update @ {day.date()}  (history={len(history)} days)"
+                    label=f"gamma/beta update @ {day.date()}  (n={len(history)} days)"
                 )
 
         # Predict next day
@@ -254,9 +353,9 @@ def build_walkforward_predictions(df_full, df_val, initial_gamma, initial_beta,
     return df_out
 
 
-# ------------------------------------------------------------------------------
-# 5. Summary statistics
-# ------------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
+# 6. Summary statistics
+# ─────────────────────────────────────────────────────────────────────────────
 
 def compute_summary(df):
     rows = []
@@ -303,9 +402,9 @@ def print_summary(summary, df, label=''):
     print(f"  Max error       : {ep.max():.4f}%")
 
 
-# ------------------------------------------------------------------------------
-# 6. HTML plots
-# ------------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
+# 7. HTML plots
+# ─────────────────────────────────────────────────────────────────────────────
 
 def _safe(v):
     if v is None or (isinstance(v, float) and np.isnan(v)):
@@ -338,7 +437,6 @@ def plot_year_html(year_df, year, output_folder, plot_num,
     n_low   = (v['vol_regime'] == 'low').sum()
     n_med   = (v['vol_regime'] == 'medium').sum()
 
-    # gamma/beta drift chart for walk-forward years
     threshold_chart = ''
     if show_thresholds and 'gamma_used' in v.columns:
         gamma_vals = [_safe(x) for x in v['gamma_used']]
@@ -365,7 +463,7 @@ def plot_year_html(year_df, year, output_folder, plot_num,
       interaction: {{ mode: 'index', intersect: false }},
       plugins: {{
         legend: {{ labels: {{ color: '#c9d1d9', font: {{ family: 'Courier New' }} }} }},
-        title: {{ display: true, text: 'Walk-Forward gamma / beta Evolution (updated every 7 days)',
+        title: {{ display: true, text: 'Walk-Forward gamma / beta (updated every 7 days)',
                   color: '#58a6ff', font: {{ size: 14 }} }}
       }},
       scales: {{
@@ -404,7 +502,6 @@ def plot_year_html(year_df, year, output_folder, plot_num,
 </head>
 <body>
 <h1>USD/INR Next-Day Close Prediction — {year}</h1>
-
 <div class="stats">
   <div class="sb"><div class="sv">{avg_err}%</div><div class="sl">Avg Abs Error</div></div>
   <div class="sb"><div class="sv">{p65_err}%</div><div class="sl">65th Pct Error</div></div>
@@ -413,20 +510,16 @@ def plot_year_html(year_df, year, output_folder, plot_num,
   <div class="sb"><div class="sv">{n_low}</div><div class="sl">Low Vol Days</div></div>
   <div class="sb"><div class="sv">{n_med}</div><div class="sl">Medium Vol Days</div></div>
 </div>
-
 <div class="leg">
   <div class="li"><div class="dot" style="background:#ff5050"></div>High vol: full GARCH shift</div>
   <div class="li"><div class="dot" style="background:#50c864"></div>Low vol: flat (same price)</div>
   <div class="li"><div class="dot" style="background:#648cff"></div>Medium vol: half GARCH shift</div>
 </div>
-
 <div class="chart-wrap"><canvas id="c1"></canvas></div>
 <div class="chart-wrap"><canvas id="c2"></canvas></div>
 <div class="chart-wrap"><canvas id="c3"></canvas></div>
 {threshold_chart}
-
 <div class="back"><a href="{index_file}">← Back to Index</a></div>
-
 <script>
 const labels    = {json.dumps(labels)};
 const actual    = {json.dumps(actual)};
@@ -484,9 +577,9 @@ new Chart(document.getElementById('c3'), {{
     return fname
 
 
-# ------------------------------------------------------------------------------
-# 7. Index pages
-# ------------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
+# 8. Index pages
+# ─────────────────────────────────────────────────────────────────────────────
 
 def _overall_stats(df):
     valid = df.dropna(subset=['predicted_next', 'next_actual'])
@@ -563,8 +656,8 @@ def _build_index_html(title, subtitle, plot_files, summary, overall_stats,
 def create_index(output_folder, plot_files, summary, overall_stats,
                  other_link=None, other_label=None):
     html = _build_index_html(
-        title='USD/INR Prediction — Train (2003-2020)',
-        subtitle='GARCH(1,1) + EMA direction model + rolling-std regime | Fixed gamma/beta',
+        title='USD/INR Prediction — Train (2003–2020)',
+        subtitle='GARCH(1,1) fitted on 2003-2020 only · EMA direction · rolling-std regime · Fixed gamma/beta',
         plot_files=plot_files, summary=summary, overall_stats=overall_stats,
         other_link=other_link, other_label=other_label,
     )
@@ -577,8 +670,8 @@ def create_index(output_folder, plot_files, summary, overall_stats,
 def create_validation_index(output_folder, plot_files, summary, overall_stats,
                              other_link=None, other_label=None):
     html = _build_index_html(
-        title='USD/INR Prediction — Walk-Forward (2021-2023)',
-        subtitle='gamma/beta initialised on 2003-2020, updated every 7 trading days on all data seen so far — zero lookahead',
+        title='USD/INR Prediction — Walk-Forward Test (2021–2023)',
+        subtitle='Zero lookahead · GARCH params walk-forward updated every 7 days · gamma/beta updated every 7 days',
         plot_files=plot_files, summary=summary, overall_stats=overall_stats,
         other_link=other_link, other_label=other_label,
     )
@@ -588,16 +681,16 @@ def create_validation_index(output_folder, plot_files, summary, overall_stats,
     return path
 
 
-# ------------------------------------------------------------------------------
-# 8. Main
-# ------------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
+# 9. Main
+# ─────────────────────────────────────────────────────────────────────────────
 
 def main(input_csv='USD_INR_Exchange.csv', output_folder='usd_inr_pred_plots'):
-    print(f'\n{"="*60}')
-    print('  USD/INR Next-Day Close Predictor  --  Walk-Forward')
-    print(f'{"="*60}')
+    print(f'\n{"="*65}')
+    print('  USD/INR Next-Day Close Predictor  —  Walk-Forward (Fixed)')
+    print(f'{"="*65}')
 
-    # Load
+    # ── Load data ─────────────────────────────────────────────────────────────
     print(f'\nLoading {input_csv} ...')
     raw = pd.read_csv(input_csv)
     raw.columns = raw.columns.str.strip()
@@ -608,57 +701,93 @@ def main(input_csv='USD_INR_Exchange.csv', output_folder='usd_inr_pred_plots'):
     raw = raw.dropna(subset=['Open', 'High', 'Low', 'Close'])
 
     df_train = raw[(raw.index.year >= 2003) & (raw.index.year <= 2020)].copy()
-    df_val   = raw[(raw.index.year >= 2021) & (raw.index.year <= 2023)].copy()
+    df_test  = raw[(raw.index.year >= 2021) & (raw.index.year <= 2023)].copy()
+    print(f'  Train : {len(df_train):,} days  ({df_train.index[0].date()} → {df_train.index[-1].date()})')
+    print(f'  Test  : {len(df_test):,} days  ({df_test.index[0].date()} → {df_test.index[-1].date()})')
 
-    print(f'  Train : {len(df_train):,} days  ({df_train.index[0].date()} -> {df_train.index[-1].date()})')
-    print(f'  Val   : {len(df_val):,} days  ({df_val.index[0].date()} -> {df_val.index[-1].date()})')
+    # ── GARCH: fit on train ONLY (the key fix) ────────────────────────────────
+    # FIX: the original code called fit_garch11() on the full 2003-2023 series,
+    # which meant the initial GARCH parameters were informed by 2021-2023 data.
+    # We now fit only on 2003-2020 and use a walk-forward refit for the test set.
+    print('\n[1] Fitting GARCH(1,1) on 2003-2020 only (train set) ...')
+    train_returns = df_train['Close'].pct_change()
+    garch_omega, garch_alpha, garch_beta = fit_garch11(
+        train_returns, label='initial 2003-2020'
+    )
 
-    # GARCH on full series (causal recursion, continuous)
-    print('\n[1] Fitting GARCH(1,1) on full series (2003-2023) ...')
+    # Apply fixed params to the train series
+    train_vol = apply_garch_vol(train_returns, garch_omega, garch_alpha, garch_beta)
+    df_train['garch_vol'] = train_vol
+
+    # ── GARCH walk-forward for the test period ────────────────────────────────
+    print('\n[2] Walk-forward GARCH vol for 2021-2023 ...')
+    # We pass the full raw series so the GARCH recursion can condition on all
+    # available history (growing expanding window). No test data is ever used
+    # for parameter fitting before the prediction day.
+    full_raw = raw[(raw.index.year >= 2003) & (raw.index.year <= 2023)].copy()
+    test_vol = build_walkforward_garch_vol(
+        full_raw=full_raw,
+        df_test=df_test,
+        init_omega=garch_omega,
+        init_alpha=garch_alpha,
+        init_beta=garch_beta,
+        update_every=7,
+    )
+    df_test['garch_vol'] = test_vol
+
+    # ── Regime + features: compute on full series (all causal) ───────────────
+    print('\n[3] Computing volatility regimes ...')
     full = raw[(raw.index.year >= 2003) & (raw.index.year <= 2023)].copy()
-    full['garch_vol'] = fit_garch11(full['Close'].pct_change())
-
-    # Regime + EMA features on full series (all causal / backward-looking)
-    print('\n[2] Computing volatility regimes ...')
     full = classify_vol_regime(full)
-    print('\n[3] Computing EMA direction features ...')
+
+    print('\n[4] Computing EMA direction features ...')
     full = compute_ema_feature(full)
 
-    feat_cols = ['garch_vol', 'std5', 'std14', 'std25', 'vol_regime',
+    feat_cols = ['std5', 'std14', 'std25', 'vol_regime',
                  'ema_5', 'ema_20', 'feat', 'close_delta', 'target']
-    df_train[feat_cols] = full.loc[df_train.index, feat_cols]
-    df_val  [feat_cols] = full.loc[df_val.index,   feat_cols]
+    for col in feat_cols:
+        df_train[col] = full.loc[df_train.index, col]
+        df_test[col]  = full.loc[df_test.index,  col]
 
-    # Learn initial gamma/beta on train only
-    print('\n[4] Learning initial gamma/beta on 2003-2020 ...')
+    # Build a combined train+test df for use as the walk-forward history base.
+    # close_delta and target are only used in learn_thresholds() which always
+    # calls dropna() on close_delta, so the last row's NaN is handled safely.
+    full_feat = full.loc[
+        (full.index.year >= 2003) & (full.index.year <= 2023),
+        feat_cols + ['Close']
+    ].copy()
+    full_feat['garch_vol'] = pd.concat([df_train['garch_vol'], df_test['garch_vol']])
+
+    # ── Learn initial gamma/beta on train only ────────────────────────────────
+    print('\n[5] Learning initial gamma/beta on 2003-2020 ...')
     gamma0, beta0 = learn_thresholds(df_train, label='initial (2003-2020)')
-    print(f'  *** Frozen for train predictions: gamma={gamma0:.4f}  beta={beta0:.4f} ***')
+    print(f'  Frozen for train predictions: gamma={gamma0:.4f}  beta={beta0:.4f}')
 
-    # Train predictions (fixed thresholds)
-    print('\n[5] Building train predictions (2003-2020, fixed thresholds) ...')
+    # ── Train predictions ─────────────────────────────────────────────────────
+    print('\n[6] Building train predictions (2003-2020, fixed thresholds) ...')
     df_train = build_train_predictions(df_train, beta0, gamma0)
 
-    # Walk-forward predictions (2021-2023, update every 7 days)
-    print('\n[6] Walk-forward predictions (2021-2023, update every 7 days) ...')
-    df_val = build_walkforward_predictions(
-        df_full=full,
-        df_val=df_val,
+    # ── Walk-forward predictions 2021-2023 ────────────────────────────────────
+    print('\n[7] Walk-forward predictions (2021-2023, update every 7 days) ...')
+    df_test = build_walkforward_predictions(
+        df_full=full_feat,
+        df_val=df_test,
         initial_gamma=gamma0,
         initial_beta=beta0,
         update_every=7,
     )
 
-    # Results
-    print('\n[7] Results -- TRAIN (2003-2020)')
+    # ── Results ───────────────────────────────────────────────────────────────
+    print('\n[8] Results — TRAIN (2003-2020)')
     summary_train = compute_summary(df_train)
     print_summary(summary_train, df_train, label='TRAIN SET')
 
-    print('\n[7b] Results -- WALK-FORWARD (2021-2023)')
-    summary_val = compute_summary(df_val)
-    print_summary(summary_val, df_val, label='WALK-FORWARD VALIDATION')
+    print('\n[8b] Results — TEST / WALK-FORWARD (2021-2023)')
+    summary_test = compute_summary(df_test)
+    print_summary(summary_test, df_test, label='TEST SET (zero lookahead)')
 
-    # HTML plots
-    print('\n[8] Generating HTML plots ...')
+    # ── HTML plots ────────────────────────────────────────────────────────────
+    print('\n[9] Generating HTML plots ...')
     os.makedirs(output_folder, exist_ok=True)
 
     train_plot_files = []
@@ -671,35 +800,35 @@ def main(input_csv='USD_INR_Exchange.csv', output_folder='usd_inr_pred_plots'):
                                index_file='index.html', show_thresholds=False)
         train_plot_files.append(fname)
 
-    val_plot_files = []
+    test_plot_files = []
     for i, year in enumerate(range(2021, 2024), 1):
-        ydf = df_val[df_val.index.year == year].copy()
+        ydf = df_test[df_test.index.year == year].copy()
         if ydf.empty:
             continue
-        print(f'  Val {year} ({len(ydf)} days) ...')
+        print(f'  Test {year} ({len(ydf)} days) ...')
         fname = plot_year_html(ydf, year, output_folder, i + 100,
                                index_file='validation_index.html',
                                show_thresholds=True)
-        val_plot_files.append(fname)
+        test_plot_files.append(fname)
 
     train_stats = _overall_stats(df_train)
-    val_stats   = _overall_stats(df_val)
+    test_stats  = _overall_stats(df_test)
 
     create_index(
         output_folder, train_plot_files, summary_train, train_stats,
         other_link='validation_index.html',
-        other_label='Go to Walk-Forward Results (2021-2023)',
+        other_label='Go to Walk-Forward Test Results (2021–2023)',
     )
     create_validation_index(
-        output_folder, val_plot_files, summary_val, val_stats,
+        output_folder, test_plot_files, summary_test, test_stats,
         other_link='index.html',
-        other_label='Go to Train Results (2003-2020)',
+        other_label='Go to Train Results (2003–2020)',
     )
 
     print(f'\nDone.')
     print(f'  Train index : {output_folder}/index.html')
-    print(f'  Val index   : {output_folder}/validation_index.html')
-    print(f'{"="*60}\n')
+    print(f'  Test index  : {output_folder}/validation_index.html')
+    print(f'{"="*65}\n')
 
 
 if __name__ == '__main__':

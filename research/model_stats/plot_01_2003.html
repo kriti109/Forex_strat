@@ -6,20 +6,16 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #0d1117; color: #c9d1d9; font-family: 'Courier New', monospace;
-          padding: 20px; }
+  body { background: #0d1117; color: #c9d1d9; font-family: 'Courier New', monospace; padding: 20px; }
   h1   { text-align: center; color: #58a6ff; font-size: 1.5em; margin-bottom: 6px; }
   .stats { display: flex; gap: 16px; justify-content: center; margin: 14px 0; flex-wrap: wrap; }
-  .sb  { background: #161b22; border: 1px solid #30363d; border-radius: 6px;
-          padding: 10px 20px; text-align: center; }
+  .sb  { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 10px 20px; text-align: center; }
   .sv  { font-size: 1.6em; color: #ff8c00; font-weight: bold; }
   .sl  { font-size: 0.75em; color: #8b949e; margin-top: 2px; }
-  .leg { display: flex; gap: 20px; justify-content: center; margin: 8px 0;
-          font-size: 0.8em; flex-wrap: wrap; }
+  .leg { display: flex; gap: 20px; justify-content: center; margin: 8px 0; font-size: 0.8em; flex-wrap: wrap; }
   .li  { display: flex; align-items: center; gap: 6px; }
   .dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-  .chart-wrap { background: #161b22; border: 1px solid #30363d; border-radius: 8px;
-                 padding: 16px; margin: 12px 0; }
+  .chart-wrap { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin: 12px 0; }
   canvas { max-height: 320px; }
   .back { text-align: center; margin-top: 16px; }
   .back a { color: #58a6ff; text-decoration: none; }
@@ -27,105 +23,70 @@
 </head>
 <body>
 <h1>USD/INR Next-Day Close Prediction — 2003</h1>
-
 <div class="stats">
-  <div class="sb"><div class="sv">0.171%</div><div class="sl">Avg Abs Error</div></div>
+  <div class="sb"><div class="sv">0.172%</div><div class="sl">Avg Abs Error</div></div>
   <div class="sb"><div class="sv">0.221%</div><div class="sl">65th Pct Error</div></div>
   <div class="sb"><div class="sv">23</div><div class="sl">Trading Days</div></div>
   <div class="sb"><div class="sv">0</div><div class="sl">High Vol Days</div></div>
   <div class="sb"><div class="sv">0</div><div class="sl">Low Vol Days</div></div>
   <div class="sb"><div class="sv">23</div><div class="sl">Medium Vol Days</div></div>
 </div>
-
 <div class="leg">
   <div class="li"><div class="dot" style="background:#ff5050"></div>High vol: full GARCH shift</div>
   <div class="li"><div class="dot" style="background:#50c864"></div>Low vol: flat (same price)</div>
   <div class="li"><div class="dot" style="background:#648cff"></div>Medium vol: half GARCH shift</div>
 </div>
-
-<div class="chart-wrap">
-  <canvas id="c1"></canvas>
-</div>
-<div class="chart-wrap">
-  <canvas id="c2"></canvas>
-</div>
-<div class="chart-wrap">
-  <canvas id="c3"></canvas>
-</div>
+<div class="chart-wrap"><canvas id="c1"></canvas></div>
+<div class="chart-wrap"><canvas id="c2"></canvas></div>
+<div class="chart-wrap"><canvas id="c3"></canvas></div>
 
 <div class="back"><a href="index.html">← Back to Index</a></div>
-
 <script>
 const labels    = ["2003-12-01", "2003-12-02", "2003-12-03", "2003-12-04", "2003-12-05", "2003-12-08", "2003-12-09", "2003-12-10", "2003-12-11", "2003-12-12", "2003-12-15", "2003-12-16", "2003-12-17", "2003-12-18", "2003-12-19", "2003-12-22", "2003-12-23", "2003-12-24", "2003-12-25", "2003-12-26", "2003-12-29", "2003-12-30", "2003-12-31"];
 const actual    = [45.629, 45.55, 45.548, 45.449, 45.47, 45.431, 45.371, 45.449, 45.422, 45.468, 45.468, 45.389, 45.427, 45.422, 45.452, 45.389, 45.442, 45.445, 45.441, 45.549, 45.499, 45.53, 45.527];
-const predicted = [45.5933, 45.5166, 45.4411, 45.4424, 45.3472, 45.3707, 45.335, 45.2781, 45.3585, 45.3338, 45.3824, 45.3848, 45.3084, 45.348, 45.3451, 45.3771, 45.3162, 45.3705, 45.375, 45.3728, 45.4822, 45.4324, 45.4645];
-const errorInr  = [-0.0357, -0.0334, -0.1069, -0.0066, -0.1228, -0.0603, -0.036, -0.1709, -0.0635, -0.1342, -0.0856, -0.0042, -0.1186, -0.074, -0.1069, -0.0119, -0.1258, -0.0745, -0.066, -0.1762, -0.0168, -0.0976, -0.0625];
-const errorPct  = [-0.0783, -0.0733, -0.2346, -0.0146, -0.2701, -0.1328, -0.0794, -0.3761, -0.1397, -0.2951, -0.1883, -0.0093, -0.2611, -0.163, -0.2353, -0.0261, -0.2769, -0.1639, -0.1453, -0.3869, -0.0368, -0.2145, -0.1372];
+const predicted = [45.5929, 45.5162, 45.4407, 45.442, 45.3468, 45.3703, 45.3346, 45.2777, 45.3582, 45.3335, 45.3821, 45.3845, 45.3081, 45.3477, 45.3448, 45.3769, 45.3159, 45.3703, 45.3748, 45.3725, 45.482, 45.4321, 45.4643];
+const errorInr  = [-0.0361, -0.0338, -0.1073, -0.007, -0.1232, -0.0607, -0.0364, -0.1713, -0.0638, -0.1345, -0.0859, -0.0045, -0.1189, -0.0743, -0.1072, -0.0121, -0.1261, -0.0747, -0.0662, -0.1765, -0.017, -0.0979, -0.0627];
+const errorPct  = [-0.0792, -0.0743, -0.2355, -0.0154, -0.271, -0.1336, -0.0801, -0.3768, -0.1404, -0.2958, -0.1889, -0.01, -0.2618, -0.1636, -0.2359, -0.0267, -0.2775, -0.1645, -0.1458, -0.3875, -0.0373, -0.2149, -0.1377];
 const ptColors  = ["rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)", "rgba(100,140,255,0.25)"];
-
-const gridColor  = 'rgba(255,255,255,0.06)';
-const tickColor  = '#8b949e';
-const baseOpts   = {
-  responsive: true,
-  animation: false,
+const gridColor = 'rgba(255,255,255,0.06)';
+const tickColor = '#8b949e';
+const baseOpts  = {
+  responsive: true, animation: false,
   interaction: { mode: 'index', intersect: false },
   plugins: { legend: { labels: { color: '#c9d1d9', font: { family: 'Courier New' } } } },
   scales: {
-    x: { ticks: { color: tickColor, maxTicksLimit: 12, font: { size: 10 } },
-           grid: { color: gridColor } },
+    x: { ticks: { color: tickColor, maxTicksLimit: 12, font: { size: 10 } }, grid: { color: gridColor } },
     y: { ticks: { color: tickColor }, grid: { color: gridColor } },
   }
 };
-
-// Chart 1 — Actual vs Predicted
 new Chart(document.getElementById('c1'), {
   type: 'line',
-  data: {
-    labels,
-    datasets: [
-      { label: 'Actual Close (INR)', data: actual,
-         borderColor: '#26a69a', backgroundColor: 'transparent',
-         borderWidth: 2, pointRadius: 0, tension: 0.1 },
-      { label: 'Predicted Close (INR)', data: predicted,
-         borderColor: '#ff8c00', backgroundColor: 'transparent',
-         borderWidth: 1.5, borderDash: [4, 3], pointRadius: 3,
-         pointBackgroundColor: ptColors, tension: 0.1 },
-    ]
-  },
-  options: { ...baseOpts,
-    plugins: { ...baseOpts.plugins,
-      title: { display: true, text: 'Actual vs Predicted Close Price',
-                color: '#58a6ff', font: { size: 14 } } } }
+  data: { labels, datasets: [
+    { label: 'Actual Close (INR)', data: actual, borderColor: '#26a69a',
+       backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0.1 },
+    { label: 'Predicted Close (INR)', data: predicted, borderColor: '#ff8c00',
+       backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4,3],
+       pointRadius: 3, pointBackgroundColor: ptColors, tension: 0.1 },
+  ]},
+  options: { ...baseOpts, plugins: { ...baseOpts.plugins,
+    title: { display: true, text: 'Actual vs Predicted Close Price', color: '#58a6ff', font: { size: 14 } } } }
 });
-
-// Chart 2 — Error in INR
 const barColors = errorInr.map(v => v === null ? 'grey' : v >= 0 ? 'rgba(38,166,154,0.75)' : 'rgba(239,83,80,0.75)');
 new Chart(document.getElementById('c2'), {
   type: 'bar',
-  data: {
-    labels,
-    datasets: [{ label: 'Prediction Error (INR)', data: errorInr,
-                  backgroundColor: barColors, borderWidth: 0 }]
-  },
-  options: { ...baseOpts,
-    plugins: { ...baseOpts.plugins,
-      title: { display: true, text: 'Error: Predicted − Actual (INR)',
-                color: '#58a6ff', font: { size: 14 } } } }
+  data: { labels, datasets: [{ label: 'Prediction Error (INR)', data: errorInr,
+    backgroundColor: barColors, borderWidth: 0 }] },
+  options: { ...baseOpts, plugins: { ...baseOpts.plugins,
+    title: { display: true, text: 'Error: Predicted - Actual (INR)', color: '#58a6ff', font: { size: 14 } } } }
 });
-
-// Chart 3 — Abs error %
 new Chart(document.getElementById('c3'), {
   type: 'line',
-  data: {
-    labels,
-    datasets: [{ label: 'Absolute Error (%)', data: errorPct.map(v => v === null ? null : Math.abs(v)),
-                  borderColor: '#e377c2', backgroundColor: 'rgba(227,119,194,0.12)',
-                  borderWidth: 1.5, pointRadius: 0, fill: true, tension: 0.1 }]
-  },
-  options: { ...baseOpts,
-    plugins: { ...baseOpts.plugins,
-      title: { display: true, text: 'Absolute Error (%)',
-                color: '#58a6ff', font: { size: 14 } } } }
+  data: { labels, datasets: [{ label: 'Absolute Error (%)',
+    data: errorPct.map(v => v === null ? null : Math.abs(v)),
+    borderColor: '#e377c2', backgroundColor: 'rgba(227,119,194,0.12)',
+    borderWidth: 1.5, pointRadius: 0, fill: true, tension: 0.1 }] },
+  options: { ...baseOpts, plugins: { ...baseOpts.plugins,
+    title: { display: true, text: 'Absolute Error (%)', color: '#58a6ff', font: { size: 14 } } } }
 });
 </script>
 </body>

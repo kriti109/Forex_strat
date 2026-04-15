@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>USD/INR Prediction 2003-2019</title>
+<title>USD/INR Prediction — Train (2003–2020)</title>
 <style>
   * { box-sizing: border-box; }
   body { background: #0d1117; color: #c9d1d9; font-family: 'Courier New', monospace;
@@ -11,8 +11,7 @@
   h2 { color: #58a6ff; border-bottom: 1px solid #30363d; padding-bottom: 6px; margin: 28px 0 12px; }
   p  { text-align: center; color: #8b949e; margin: 6px 0; }
   .stats { display: flex; gap: 20px; justify-content: center; margin: 20px 0; flex-wrap: wrap; }
-  .sb { background: #161b22; border: 1px solid #30363d; border-radius: 8px;
-         padding: 14px 24px; text-align: center; }
+  .sb { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 14px 24px; text-align: center; }
   .sv { font-size: 2em; color: #ff8c00; font-weight: bold; }
   .sl { font-size: 0.8em; color: #8b949e; margin-top: 4px; }
   table { border-collapse: collapse; width: 100%; font-size: 0.82em; margin: 10px 0; }
@@ -25,59 +24,41 @@
   li { margin: 8px 0; }
   a  { color: #58a6ff; text-decoration: none; }
   a:hover { color: #ff8c00; }
-  .legend { display: flex; gap: 24px; justify-content: center; margin: 14px 0;
-             font-size: 0.82em; flex-wrap: wrap; }
-  .li  { display: flex; align-items: center; gap: 7px; }
-  .dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
   code { background: #161b22; padding: 2px 6px; border-radius: 4px; color: #79c0ff; }
 </style>
 </head>
 <body>
-<h1>USD/INR Next-Day Close Prediction</h1>
-<p>2003 – 2019 &nbsp;|&nbsp; GARCH(1,1) volatility + EMA direction model + rolling-std regime</p>
-
+<h1>USD/INR Prediction — Train (2003–2020)</h1>
+<p>GARCH(1,1) fitted on 2003-2020 only · EMA direction · rolling-std regime · Fixed gamma/beta</p>
+<p style="text-align:center;margin-top:10px"><a href="validation_index.html">-> Go to Walk-Forward Test Results (2021–2023)</a></p>
 <div class="stats">
-  <div class="sb"><div class="sv">0.3591%</div><div class="sl">Overall Avg Abs Error</div></div>
-  <div class="sb"><div class="sv">0.2488%</div><div class="sl">Overall Median Error</div></div>
-  <div class="sb"><div class="sv">0.3651%</div><div class="sl">Overall 65th Pct Error</div></div>
-  <div class="sb"><div class="sv">0.7975%</div><div class="sl">Overall 90th Pct Error</div></div>
-  <div class="sb"><div class="sv">4,164</div><div class="sl">Total Trading Days</div></div>
+  <div class="sb"><div class="sv">0.3617%</div><div class="sl">Overall Avg Abs Error</div></div>
+  <div class="sb"><div class="sv">0.2528%</div><div class="sl">Overall Median Error</div></div>
+  <div class="sb"><div class="sv">0.3678%</div><div class="sl">Overall 65th Pct Error</div></div>
+  <div class="sb"><div class="sv">0.8022%</div><div class="sl">Overall 90th Pct Error</div></div>
+  <div class="sb"><div class="sv">4,426</div><div class="sl">Total Trading Days</div></div>
 </div>
-
-<div class="legend">
-  <div class="li"><div class="dot" style="background:#ff5050"></div>
-    <b>High vol</b>: <code>std5 &gt; std14 &gt; std25</code> &rarr; <code>close + dir &times; &sigma;_GARCH &times; close</code></div>
-  <div class="li"><div class="dot" style="background:#50c864"></div>
-    <b>Low vol</b>: <code>std5 &lt; std14 &lt; std25</code> &rarr; same price as today</div>
-  <div class="li"><div class="dot" style="background:#648cff"></div>
-    <b>Medium vol</b>: everything else &rarr; <code>close + dir &times; 0.5&sigma; &times; close</code></div>
-</div>
-
 <h2>Yearly Summary</h2>
-<table>
-  <thead><tr><th>Year</th><th>Days</th><th>High Vol</th><th>Low Vol</th><th>Medium Vol</th><th>Avg Error (INR)</th><th>Avg Error (%)</th><th>65th Pct Err (%)</th><th>Max Error (%)</th></tr></thead>
-  <tbody><tr><td>2003.0</td><td>23.0</td><td>0.0</td><td>0.0</td><td>23.0</td><td>0.0779</td><td>0.1712</td><td>0.2205</td><td>0.3869</td></tr>
-<tr><td>2004.0</td><td>260.0</td><td>13.0</td><td>157.0</td><td>90.0</td><td>0.1013</td><td>0.2254</td><td>0.2255</td><td>1.3553</td></tr>
-<tr><td>2005.0</td><td>259.0</td><td>19.0</td><td>161.0</td><td>79.0</td><td>0.0841</td><td>0.1907</td><td>0.2004</td><td>1.2514</td></tr>
-<tr><td>2006.0</td><td>260.0</td><td>16.0</td><td>159.0</td><td>85.0</td><td>0.1137</td><td>0.2516</td><td>0.2687</td><td>1.8954</td></tr>
-<tr><td>2007.0</td><td>258.0</td><td>15.0</td><td>141.0</td><td>102.0</td><td>0.1351</td><td>0.3275</td><td>0.3554</td><td>1.4606</td></tr>
-<tr><td>2008.0</td><td>242.0</td><td>13.0</td><td>139.0</td><td>90.0</td><td>0.2369</td><td>0.5258</td><td>0.5494</td><td>3.2311</td></tr>
+<table><thead><tr><th>Year</th><th>Days</th><th>High Vol</th><th>Low Vol</th><th>Medium Vol</th><th>Avg Error (INR)</th><th>Avg Error (%)</th><th>65th Pct Err (%)</th><th>Max Error (%)</th></tr></thead><tbody><tr><td>2003.0</td><td>23.0</td><td>0.0</td><td>0.0</td><td>23.0</td><td>0.0782</td><td>0.1719</td><td>0.2211</td><td>0.3875</td></tr>
+<tr><td>2004.0</td><td>260.0</td><td>13.0</td><td>157.0</td><td>90.0</td><td>0.1014</td><td>0.2254</td><td>0.2256</td><td>1.3555</td></tr>
+<tr><td>2005.0</td><td>259.0</td><td>19.0</td><td>161.0</td><td>79.0</td><td>0.0842</td><td>0.1907</td><td>0.2006</td><td>1.252</td></tr>
+<tr><td>2006.0</td><td>260.0</td><td>16.0</td><td>159.0</td><td>85.0</td><td>0.1138</td><td>0.2517</td><td>0.2687</td><td>1.8956</td></tr>
+<tr><td>2007.0</td><td>258.0</td><td>15.0</td><td>141.0</td><td>102.0</td><td>0.1351</td><td>0.3275</td><td>0.3555</td><td>1.4606</td></tr>
+<tr><td>2008.0</td><td>242.0</td><td>13.0</td><td>139.0</td><td>90.0</td><td>0.237</td><td>0.5259</td><td>0.5494</td><td>3.2312</td></tr>
 <tr><td>2009.0</td><td>260.0</td><td>6.0</td><td>169.0</td><td>85.0</td><td>0.2304</td><td>0.4756</td><td>0.5093</td><td>3.8329</td></tr>
-<tr><td>2010.0</td><td>261.0</td><td>11.0</td><td>175.0</td><td>75.0</td><td>0.1757</td><td>0.3845</td><td>0.4178</td><td>2.6918</td></tr>
-<tr><td>2011.0</td><td>259.0</td><td>12.0</td><td>153.0</td><td>94.0</td><td>0.1781</td><td>0.3749</td><td>0.3583</td><td>2.7251</td></tr>
-<tr><td>2012.0</td><td>261.0</td><td>10.0</td><td>177.0</td><td>74.0</td><td>0.315</td><td>0.5939</td><td>0.6033</td><td>6.5854</td></tr>
-<tr><td>2013.0</td><td>260.0</td><td>5.0</td><td>175.0</td><td>80.0</td><td>0.3164</td><td>0.5268</td><td>0.5756</td><td>3.8394</td></tr>
-<tr><td>2014.0</td><td>261.0</td><td>8.0</td><td>169.0</td><td>84.0</td><td>0.2121</td><td>0.3471</td><td>0.4061</td><td>2.0618</td></tr>
-<tr><td>2015.0</td><td>261.0</td><td>8.0</td><td>160.0</td><td>93.0</td><td>0.1834</td><td>0.2853</td><td>0.3299</td><td>1.0365</td></tr>
-<tr><td>2016.0</td><td>261.0</td><td>10.0</td><td>177.0</td><td>74.0</td><td>0.1681</td><td>0.25</td><td>0.2969</td><td>1.366</td></tr>
-<tr><td>2017.0</td><td>258.0</td><td>12.0</td><td>156.0</td><td>90.0</td><td>0.14</td><td>0.2148</td><td>0.2372</td><td>1.0211</td></tr>
-<tr><td>2018.0</td><td>261.0</td><td>7.0</td><td>169.0</td><td>85.0</td><td>0.2871</td><td>0.413</td><td>0.4985</td><td>1.8768</td></tr>
-<tr><td>2019.0</td><td>259.0</td><td>8.0</td><td>166.0</td><td>85.0</td><td>0.272</td><td>0.385</td><td>0.4336</td><td>2.7708</td></tr>
-</tbody>
-</table>
-
+<tr><td>2010.0</td><td>261.0</td><td>11.0</td><td>175.0</td><td>75.0</td><td>0.1757</td><td>0.3846</td><td>0.4179</td><td>2.6919</td></tr>
+<tr><td>2011.0</td><td>259.0</td><td>12.0</td><td>153.0</td><td>94.0</td><td>0.1781</td><td>0.3749</td><td>0.3584</td><td>2.7252</td></tr>
+<tr><td>2012.0</td><td>261.0</td><td>10.0</td><td>177.0</td><td>74.0</td><td>0.3151</td><td>0.594</td><td>0.6034</td><td>6.5854</td></tr>
+<tr><td>2013.0</td><td>260.0</td><td>5.0</td><td>175.0</td><td>80.0</td><td>0.3164</td><td>0.5268</td><td>0.5757</td><td>3.8394</td></tr>
+<tr><td>2014.0</td><td>261.0</td><td>8.0</td><td>169.0</td><td>84.0</td><td>0.2121</td><td>0.3472</td><td>0.4063</td><td>2.0621</td></tr>
+<tr><td>2015.0</td><td>261.0</td><td>8.0</td><td>160.0</td><td>93.0</td><td>0.1834</td><td>0.2854</td><td>0.33</td><td>1.0366</td></tr>
+<tr><td>2016.0</td><td>261.0</td><td>10.0</td><td>177.0</td><td>74.0</td><td>0.1681</td><td>0.2501</td><td>0.2969</td><td>1.3664</td></tr>
+<tr><td>2017.0</td><td>258.0</td><td>12.0</td><td>156.0</td><td>90.0</td><td>0.14</td><td>0.2149</td><td>0.2374</td><td>1.0214</td></tr>
+<tr><td>2018.0</td><td>261.0</td><td>7.0</td><td>169.0</td><td>85.0</td><td>0.2871</td><td>0.4131</td><td>0.4985</td><td>1.8768</td></tr>
+<tr><td>2019.0</td><td>260.0</td><td>8.0</td><td>167.0</td><td>85.0</td><td>0.2711</td><td>0.3838</td><td>0.4322</td><td>2.771</td></tr>
+<tr><td>2020.0</td><td>261.0</td><td>17.0</td><td>150.0</td><td>94.0</td><td>0.3017</td><td>0.4039</td><td>0.3867</td><td>2.8942</td></tr>
+</tbody></table>
 <h2>Per-Year Interactive Plots</h2>
-<p style="font-size:0.82em">Each plot: actual vs predicted close &middot; error bar chart &middot; abs error % &mdash; coloured by regime</p>
 <ul><li><a href="plot_01_2003.html" target="_blank">plot_01_2003.html</a></li>
 <li><a href="plot_02_2004.html" target="_blank">plot_02_2004.html</a></li>
 <li><a href="plot_03_2005.html" target="_blank">plot_03_2005.html</a></li>
@@ -94,6 +75,7 @@
 <li><a href="plot_14_2016.html" target="_blank">plot_14_2016.html</a></li>
 <li><a href="plot_15_2017.html" target="_blank">plot_15_2017.html</a></li>
 <li><a href="plot_16_2018.html" target="_blank">plot_16_2018.html</a></li>
-<li><a href="plot_17_2019.html" target="_blank">plot_17_2019.html</a></li></ul>
+<li><a href="plot_17_2019.html" target="_blank">plot_17_2019.html</a></li>
+<li><a href="plot_18_2020.html" target="_blank">plot_18_2020.html</a></li></ul>
 </body>
 </html>

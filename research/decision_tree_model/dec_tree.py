@@ -16,6 +16,13 @@ Features used for direction:
   9.  close_in_range  = (close - low) / (high - low + 1e-9)
   10. prev_direction  = sign(close.diff().shift(1))
 
+GARCH:
+  - Parameters fitted on 2003-2020 train data only.
+  - Walk-forward: every 7 trading days in 2021-2023, refit GARCH parameters
+    on ALL data seen so far (2003-2020 + elapsed val days). Zero lookahead.
+  - GARCH variance recursion always runs from t=0 using the fitted parameters,
+    so conditional vol is available for every day including test period.
+
 Train : 2003-2020  (tree fitted once, fixed)
 Test  : 2021-2023  (zero lookahead, out-of-sample)
 
@@ -46,7 +53,11 @@ def _garch_variance(r, omega, alpha, beta):
     return h
 
 
-def fit_garch11(returns):
+def fit_garch11(returns, label=''):
+    """
+    Fit GARCH(1,1) parameters on `returns`.
+    Returns (omega, alpha, beta) — the raw parameters, not the vol series.
+    """
     r  = returns.fillna(0).values
     uv = max(float(np.var(r)), 1e-10)
     best_nll, best_params = np.inf, None
@@ -68,9 +79,19 @@ def fit_garch11(returns):
         best_params = (uv * 0.05, 0.10, 0.80)
 
     omega, alpha, beta = best_params
-    h = _garch_variance(r, omega, alpha, beta)
-    print(f"  GARCH(1,1): omega={omega:.2e}  alpha={alpha:.4f}  beta={beta:.4f}"
+    tag = f"  [{label}] " if label else "  "
+    print(f"{tag}GARCH(1,1): omega={omega:.2e}  alpha={alpha:.4f}  beta={beta:.4f}"
           f"  persistence={alpha+beta:.4f}")
+    return omega, alpha, beta
+
+
+def apply_garch_vol(returns, omega, alpha, beta):
+    """
+    Given fixed GARCH parameters, run the variance recursion and return
+    conditional std-dev series (same length as returns).
+    """
+    r = returns.fillna(0).values
+    h = _garch_variance(r, omega, alpha, beta)
     return np.sqrt(np.maximum(h, 1e-12))
 
 
@@ -129,7 +150,53 @@ def build_features(df):
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 4. Train Decision Tree
+# 4. Walk-forward GARCH vol for test period
+# ──────────────────────────────────────────────────────────────────────────────
+
+def build_walkforward_garch_vol(full, df_val, init_omega, init_alpha, init_beta,
+                                 update_every=7):
+    """
+    For each day in df_val (2021-2023):
+      - Every `update_every` trading days, refit GARCH parameters on ALL
+        data seen so far (full series up to but NOT including today).
+        Zero lookahead guaranteed.
+      - Apply current parameters via full recursion from t=0 on history,
+        and read off the last value as today's conditional vol.
+
+    Returns a Series of garch_vol aligned to df_val.index.
+    """
+    val_idx = df_val.index
+    n_val   = len(val_idx)
+
+    omega, alpha, beta = init_omega, init_alpha, init_beta
+    garch_vol_list = []
+
+    print(f"\n  Walk-forward GARCH: {n_val} days  |  refit every {update_every} days")
+    print(f"  Initial: omega={omega:.2e}  alpha={alpha:.4f}  beta={beta:.4f}")
+
+    for i in range(n_val):
+        day = val_idx[i]
+
+        # Refit parameters on all data strictly before today
+        if i > 0 and i % update_every == 0:
+            history_returns = full.loc[full.index < day, 'Close'].pct_change()
+            if len(history_returns.dropna()) > 50:
+                omega, alpha, beta = fit_garch11(
+                    history_returns,
+                    label=f"GARCH refit @ {day.date()}  (n={len(history_returns)})"
+                )
+
+        # Apply current parameters on all history up to and including today
+        # to get today's conditional vol (last value of the recursion)
+        history_returns = full.loc[full.index <= day, 'Close'].pct_change()
+        vol_series = apply_garch_vol(history_returns, omega, alpha, beta)
+        garch_vol_list.append(vol_series[-1])
+
+    return pd.Series(garch_vol_list, index=val_idx, name='garch_vol')
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 5. Train Decision Tree
 # ──────────────────────────────────────────────────────────────────────────────
 
 def train_decision_tree(df_train):
@@ -158,7 +225,7 @@ def train_decision_tree(df_train):
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 5. Build predictions
+# 6. Build predictions
 # ──────────────────────────────────────────────────────────────────────────────
 
 def build_predictions(df, clf):
@@ -174,6 +241,8 @@ def build_predictions(df, clf):
     for i in range(n - 1):
         row = feat_matrix[i]
         if np.any(np.isnan(row)):
+            continue
+        if np.isnan(gvol[i]):
             continue
         d = clf.predict(row.reshape(1, -1))[0]
         c = close[i]
@@ -194,7 +263,7 @@ def build_predictions(df, clf):
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 6. Summary statistics
+# 7. Summary statistics
 # ──────────────────────────────────────────────────────────────────────────────
 
 def compute_summary(df):
@@ -206,7 +275,6 @@ def compute_summary(df):
         err     = (v['predicted_next'] - v['next_actual']).abs()
         err_pct = err / v['next_actual'] * 100
 
-        # direction accuracy
         actual_dir  = np.sign(v['next_actual'].values - v['Close'].values)
         pred_dir    = v['direction_pred'].values
         valid_mask  = ~np.isnan(pred_dir) & ~np.isnan(actual_dir)
@@ -252,7 +320,7 @@ def print_summary(summary, df, label=''):
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 7. HTML plots
+# 8. HTML plots
 # ──────────────────────────────────────────────────────────────────────────────
 
 def _safe(v):
@@ -285,7 +353,6 @@ def plot_year_html(year_df, year, output_folder, plot_num, index_file='index.htm
     n_low   = (v['vol_regime'] == 'low').sum()
     n_med   = (v['vol_regime'] == 'medium').sum()
 
-    # direction accuracy
     actual_dir = np.sign(v['next_actual'].values - v['Close'].values)
     pred_dir   = v['direction_pred'].values
     vm         = ~np.isnan(pred_dir)
@@ -332,7 +399,7 @@ def plot_year_html(year_df, year, output_folder, plot_num, index_file='index.htm
 </head>
 <body>
 <h1>USD/INR Next-Day Prediction — {year}</h1>
-<div class="sub">Decision Tree Direction Classifier · GARCH(1,1) Magnitude</div>
+<div class="sub">Decision Tree Direction Classifier · Walk-Forward GARCH(1,1) Magnitude</div>
 
 <div class="stats">
   <div class="sb"><div class="sv">{avg_err}%</div><div class="sl">Avg Abs Error</div></div>
@@ -420,7 +487,7 @@ new Chart(document.getElementById('c3'), {{
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 8. Index pages
+# 9. Index pages
 # ──────────────────────────────────────────────────────────────────────────────
 
 def _overall_stats(df):
@@ -453,7 +520,6 @@ def _build_index_html(title, subtitle, plot_files, summary, overall_stats,
              f'<a href="{other_link}" style="color:#e2b714">→ {other_label}</a></p>'
              if other_link else '')
 
-    # Feature importance chart
     fi_chart = ''
     if feature_importances is not None and feature_names is not None:
         fi_chart = f"""
@@ -567,7 +633,7 @@ def create_index(output_folder, plot_files, summary, overall_stats,
                  other_link=None, other_label=None):
     html = _build_index_html(
         title='USD/INR Decision Tree — Train (2003–2020)',
-        subtitle='Decision Tree direction · GARCH(1,1) magnitude · rolling-std regime · fixed tree',
+        subtitle='Decision Tree direction · GARCH(1,1) magnitude (fitted 2003-2020) · rolling-std regime · fixed tree',
         plot_files=plot_files, summary=summary, overall_stats=overall_stats,
         feature_importances=feature_importances, feature_names=feature_names,
         other_link=other_link, other_label=other_label,
@@ -582,7 +648,7 @@ def create_validation_index(output_folder, plot_files, summary, overall_stats,
                              other_link=None, other_label=None):
     html = _build_index_html(
         title='USD/INR Decision Tree — Test (2021–2023)',
-        subtitle='Zero lookahead · Tree trained on 2003-2020 only · GARCH + regime identical',
+        subtitle='Zero lookahead · Tree trained on 2003-2020 · GARCH params walk-forward updated every 7 days',
         plot_files=plot_files, summary=summary, overall_stats=overall_stats,
         other_link=other_link, other_label=other_label,
     )
@@ -593,7 +659,7 @@ def create_validation_index(output_folder, plot_files, summary, overall_stats,
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 9. Main
+# 10. Main
 # ──────────────────────────────────────────────────────────────────────────────
 
 def main(input_csv='USD_INR_Exchange.csv', output_folder='usd_inr_dt_plots'):
@@ -616,68 +682,74 @@ def main(input_csv='USD_INR_Exchange.csv', output_folder='usd_inr_dt_plots'):
     print(f'  Train : {len(df_train):,} days  ({df_train.index[0].date()} → {df_train.index[-1].date()})')
     print(f'  Test  : {len(df_test):,} days  ({df_test.index[0].date()} → {df_test.index[-1].date()})')
 
-    # GARCH on full series
-    print('\n[1] Fitting GARCH(1,1) on full series ...')
+    # ── GARCH: fit parameters on train only ──────────────────────────────────
+    print('\n[1] Fitting GARCH(1,1) parameters on 2003-2020 only ...')
+    train_returns = df_train['Close'].pct_change()
+    garch_omega, garch_alpha, garch_beta = fit_garch11(train_returns, label='initial 2003-2020')
+
+    # Apply fixed params to get train garch_vol
+    train_vol = apply_garch_vol(train_returns, garch_omega, garch_alpha, garch_beta)
+    df_train['garch_vol'] = train_vol
+
+    # ── GARCH walk-forward for test period ───────────────────────────────────
+    print('\n[2] Walk-forward GARCH vol for 2021-2023 ...')
+    # full raw series needed so recursion can see all history up to each test day
+    full_raw = raw[(raw.index.year >= 2003) & (raw.index.year <= 2023)].copy()
+    test_vol = build_walkforward_garch_vol(
+        full_raw, df_test,
+        init_omega=garch_omega, init_alpha=garch_alpha, init_beta=garch_beta,
+        update_every=7,
+    )
+    df_test['garch_vol'] = test_vol
+
+    # ── Regime (causal rolling std — safe to compute on full series) ─────────
+    print('\n[3] Volatility regimes ...')
     full = raw[(raw.index.year >= 2003) & (raw.index.year <= 2023)].copy()
-    full['garch_vol'] = fit_garch11(full['Close'].pct_change())
-
-    # Regime
-    print('\n[2] Volatility regimes ...')
     full = classify_vol_regime(full)
-
-    # Features
-    print('\n[3] Building features ...')
-    full = build_features(full)
-
-    feat_cols = ['garch_vol', 'std5', 'std14', 'std25', 'vol_regime'] + FEATURE_COLS
-    for col in feat_cols:
-        if col in full.columns:
-            if col in df_train.columns:
-                df_train[col] = full.loc[df_train.index, col]
-            else:
-                df_train[col] = full.loc[df_train.index, col]
-            df_test[col] = full.loc[df_test.index, col]
-
-    df_train['Close'] = full.loc[df_train.index, 'Close']
-    df_test['Close']  = full.loc[df_test.index,  'Close']
-    df_train['garch_vol'] = full.loc[df_train.index, 'garch_vol']
-    df_test['garch_vol']  = full.loc[df_test.index,  'garch_vol']
+    df_train['std5']       = full.loc[df_train.index, 'std5']
+    df_train['std14']      = full.loc[df_train.index, 'std14']
+    df_train['std25']      = full.loc[df_train.index, 'std25']
     df_train['vol_regime'] = full.loc[df_train.index, 'vol_regime']
+    df_test['std5']        = full.loc[df_test.index,  'std5']
+    df_test['std14']       = full.loc[df_test.index,  'std14']
+    df_test['std25']       = full.loc[df_test.index,  'std25']
     df_test['vol_regime']  = full.loc[df_test.index,  'vol_regime']
 
+    # ── Features (all causal — safe to compute on full series) ───────────────
+    print('\n[4] Building features ...')
+    full = build_features(full)
     for col in FEATURE_COLS + ['target', 'next_close']:
         df_train[col] = full.loc[df_train.index, col]
         df_test[col]  = full.loc[df_test.index,  col]
 
-    # Train Decision Tree
-    print('\n[4] Training Decision Tree ...')
+    # ── Train Decision Tree ───────────────────────────────────────────────────
+    print('\n[5] Training Decision Tree ...')
     clf, best_depth, cv_acc = train_decision_tree(df_train)
 
-    # Feature importances
     fi     = clf.feature_importances_
     fi_idx = np.argsort(fi)[::-1]
     print("\n  Feature importances:")
     for i in fi_idx:
         print(f"    {FEATURE_COLS[i]:20s}: {fi[i]:.4f}")
 
-    # Predictions
-    print('\n[5] Building train predictions ...')
+    # ── Predictions ───────────────────────────────────────────────────────────
+    print('\n[6] Building train predictions ...')
     df_train = build_predictions(df_train, clf)
 
-    print('\n[6] Building test predictions (zero lookahead, fixed tree) ...')
+    print('\n[7] Building test predictions (zero lookahead, fixed tree) ...')
     df_test = build_predictions(df_test, clf)
 
-    # Results
-    print('\n[7] Results — TRAIN (2003–2020)')
+    # ── Results ───────────────────────────────────────────────────────────────
+    print('\n[8] Results — TRAIN (2003–2020)')
     summary_train = compute_summary(df_train)
     print_summary(summary_train, df_train, label='TRAIN SET')
 
-    print('\n[7b] Results — TEST (2021–2023)')
+    print('\n[8b] Results — TEST (2021–2023)')
     summary_test = compute_summary(df_test)
     print_summary(summary_test, df_test, label='TEST SET (out-of-sample)')
 
-    # HTML
-    print('\n[8] Generating HTML plots ...')
+    # ── HTML ──────────────────────────────────────────────────────────────────
+    print('\n[9] Generating HTML plots ...')
     os.makedirs(output_folder, exist_ok=True)
 
     train_files = []
